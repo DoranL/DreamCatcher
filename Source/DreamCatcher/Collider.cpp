@@ -62,6 +62,16 @@ void ACollider::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//좌우 회전 
+	FRotator NewRotation = GetActorRotation();
+	NewRotation.Yaw += CameraInput.X;
+	SetActorRotation(NewRotation);
+
+	//상하 회전 + 회전 각도 제한두기 -80과 5 값 사이에서만 카메라 구도 변경 가능
+	FRotator NewSpringArmRotation = SpringArm->GetComponentRotation();
+	NewSpringArmRotation.Pitch = FMath::Clamp(NewSpringArmRotation.Pitch += CameraInput.Y, -80.f, 5.f);
+
+	SpringArm->SetWorldRotation(NewSpringArmRotation);
 }
 
 // Called to bind functionality to input
@@ -71,6 +81,9 @@ void ACollider::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &ACollider::MoveForward);
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ACollider::MoveRight);
+
+	PlayerInputComponent->BindAxis(TEXT("CameraPitch"), this, &ACollider::PitchCamera);
+	PlayerInputComponent->BindAxis(TEXT("CameraYaw"), this, &ACollider::YawCamera);
 }
 
 void ACollider::MoveForward(float input)
@@ -91,6 +104,17 @@ void ACollider::MoveRight(float input)
 	{
 		OurMovementComponent->AddInputVector(Right * input);
 	}
+}
+
+//마우스 클릭으로 카메라 회전
+void ACollider::YawCamera(float AxisValue)  
+{
+	CameraInput.X = AxisValue;
+}
+
+void ACollider::PitchCamera(float AxisValue)
+{
+	CameraInput.Y = AxisValue;
 }
 
 UPawnMovementComponent* ACollider::GetMovementComponent() const
