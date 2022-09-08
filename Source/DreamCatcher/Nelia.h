@@ -2,18 +2,29 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "CoreMinimal.h"                   //언리얼 오브젝트가 동작할 수 있는 최소 기능만 선언된 헤더 파일 ex)Templates , Generic, Containers, Math 포함
 #include "GameFramework/Character.h"
 #include "Nelia.generated.h"
 
-UENUM(BlueprintType)
-enum class EMovementStatus : uint8
+UENUM(BlueprintType)					  //블루프린트에서 사용 가능하도록 타입을 넣어줌
+enum class EMovementStatus : uint8        //enum클래스 열거형 
 {
-	EMS_Normal		 UMETA(DisplayName = "Normal"),
+	EMS_Normal		 UMETA(DisplayName = "Normal"), //열거자들의 이름을 추가 DisplayName에 넣은 이름이 언리얼 엔진에서 보여지는 이름
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
 
 	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM(BlueprintType)						
+enum class EStaminaStatus : uint8
+{
+	ESS_Normal				UMETA(DisplayName = "Normal"),
+	ESS_BelowMinimum		UMETA(DisplayName = "BelowMinimum"),
+	ESS_Exhausted		    UMETA(DisplayName = "Exhausted"),
+	ESS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering"),
+
+	ESS_MAX UMETA(DisplayName = "DefaultMax")
 };
 
 UCLASS()
@@ -27,6 +38,17 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EMovementStatus MovementStatus;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EStaminaStatus StaminaStatus;
+
+	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float StaminaDrainRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinSprintStamina;
 
 	/** Set Movement status and running speed */
 	void SetMovementStatus(EMovementStatus Status);

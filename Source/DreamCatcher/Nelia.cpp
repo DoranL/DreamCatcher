@@ -18,21 +18,22 @@ ANelia::ANelia()
 	PrimaryActorTick.bCanEverTick = true;
 
 	//Create Camera boom(충격이 있는 경우 플레이어를 향해 당김)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));   
 	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->TargetArmLength = 600.f; //camera follow at this distance
-	CameraBoom->bUsePawnControlRotation = true; //Rotate arm based on controller
+	CameraBoom->TargetArmLength = 400.f;							//카메라가 Neila와 400떨어진 위치를 고정으로 따라옴
+	CameraBoom->bUsePawnControlRotation = true;						//컨트롤러에 따라 CameraArm 회전
 
-	//Set size for collision capsule
-	GetCapsuleComponent()->SetCapsuleSize(17.f, 64.f);
+	
+	GetCapsuleComponent()->SetCapsuleSize(17.f, 64.f);				//Nelia의 캡슐 높이와 반지름 지정
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));		 
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	//Attach the camera to the end of the boom and let the boom adjust to match
 	//the controller orientation
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Set our turn rates for input
+	//키 입력 시 1초동안 65씩 회전
 	BaseTurnRate = 65.f;
 	BaseLookUpRate = 65.f;
 
@@ -42,16 +43,22 @@ ANelia::ANelia()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
-	//Configure character movement //입력 방향에 따라 자동으로 캐릭터가 그 방향을 보도록 회전하게 하는 건가?
-	GetCharacterMovement()->bOrientRotationToMovement = true; //character moves in the direction of input...
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 650.f;
-	GetCharacterMovement()->AirControl = 0.2f;
+	GetCharacterMovement()->bOrientRotationToMovement = true; //bOrientRotationToMovement는 자동으로 캐릭터의 이동방향에 맞춰, 회전 보간을 해준다.
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.f, 0.0f); //키 입력 시 540씩 회전함??? 
+	GetCharacterMovement()->JumpZVelocity = 650.f; //점프하는 힘
+	GetCharacterMovement()->AirControl = 0.2f; //중력의 힘
 
 	RunningSpeed = 650.f;
 	SprintingSpeed = 950.f;
 
 	bShiftKeyDown = false;
+
+	//Initialize Enums
+	MovementStatus = EMovementStatus::EMS_Normal;
+	StaminaStatus = EStaminaStatus::ESS_Normal;
+
+	StaminaDrainRate = 25.f;
+	MinSprintStamina = 50.f;
 }
 
 // Called when the game starts or when spawned
@@ -71,10 +78,12 @@ void ANelia::Tick(float DeltaTime)
 // Called to bind functionality to input
 void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	check(PlayerInputComponent);
+	Super::SetupPlayerInputComponent(PlayerInputComponent);					//키보드 입력 값을 전달받는 폰의 함수
+	check(PlayerInputComponent);											//입력받은 키를 확인
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ANelia::Jump);
+
+	//입력 받은 키에 따라 해당 이름에 맞는 함수 호출? JUMP, 이동, 캐릭터 회전등 
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ANelia::Jump);				
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ANelia::ShiftKeyDown);
