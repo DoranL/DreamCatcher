@@ -59,6 +59,13 @@ ANelia::ANelia()
 
 	StaminaDrainRate = 25.f;
 	MinSprintStamina = 50.f;
+
+	MaxHealth = 100.f;
+	Health = 65.f;
+	MaxStamina = 150.f;
+	Stamina = 120.f;
+	Coins = 0;
+
 }
 
 // Called when the game starts or when spawned
