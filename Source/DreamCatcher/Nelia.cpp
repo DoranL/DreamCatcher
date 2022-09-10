@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 
 
+
 // Sets default values
 ANelia::ANelia()
 {
@@ -48,6 +49,12 @@ ANelia::ANelia()
 	GetCharacterMovement()->JumpZVelocity = 650.f; //Á¡ÇÁÇÏ´Â Èû
 	GetCharacterMovement()->AirControl = 0.2f; //Áß·ÂÀÇ Èû
 
+	MaxHealth = 100.f;
+	Health = 65.f;
+	MaxStamina = 150.f;
+	Stamina = 120.f;
+	Coins = 0;
+
 	RunningSpeed = 650.f;
 	SprintingSpeed = 950.f;
 
@@ -58,14 +65,10 @@ ANelia::ANelia()
 	StaminaStatus = EStaminaStatus::ESS_Normal;
 
 	StaminaDrainRate = 25.f;
-	MinSprintStamina = 50.f;
+	MinSprintStamina = 50.f;	
 
-	MaxHealth = 100.f;
-	Health = 65.f;
-	MaxStamina = 150.f;
-	Stamina = 120.f;
-	Coins = 0;
-
+	bMovingForward = false;
+	bMovingRight = false;
 }
 
 // Called when the game starts or when spawned
@@ -79,6 +82,113 @@ void ANelia::BeginPlay()
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+
+
+	//if (MovementStatus == EMovementStatus::EMS_Death) return;
+
+	float DeltaStamina = StaminaDrainRate * DeltaTime;
+
+	switch (StaminaStatus)
+	{
+	case EStaminaStatus::ESS_Normal:
+		if (bShiftKeyDown)
+		{
+			if (Stamina - DeltaStamina <= MinSprintStamina)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
+				Stamina -= DeltaStamina;
+			}
+			else
+			{
+				Stamina -= DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Sprinting);
+			if (bMovingForward || bMovingRight)
+			{
+				SetMovementStatus(EMovementStatus::EMS_Sprinting);
+			}
+			else
+			{
+				{
+					SetMovementStatus(EMovementStatus::EMS_Normal);
+				}
+			}
+		}
+		else //shift key up
+		{
+			if (Stamina + DeltaStamina >= MaxStamina)
+			{
+				Stamina = MaxStamina;
+			}
+			else
+			{
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_BelowMinimum:
+		if (bShiftKeyDown)
+		{
+			if (Stamina - DeltaStamina <= 0.f)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
+				Stamina = 0;
+				SetMovementStatus(EMovementStatus::EMS_Normal);
+			}
+			else
+			{
+				Stamina -= DeltaStamina;
+				SetMovementStatus(EMovementStatus::EMS_Sprinting);
+			}
+		}
+		else //shift key up
+		{
+			if (Stamina + DeltaStamina >= MinSprintStamina)
+			{
+				SetStaminaStatus(EStaminaStatus::ESS_Normal);
+				Stamina += DeltaStamina;
+			}
+			else 
+			{
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_Exhausted:
+		if (bShiftKeyDown)
+		{
+			Stamina = 0.f;
+		}
+		else //shift key up
+		{
+			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	case EStaminaStatus::ESS_ExhaustedRecovering:
+		if (Stamina + DeltaStamina >= MinSprintStamina)
+		{
+			SetStaminaStatus(EStaminaStatus::ESS_Normal);
+			Stamina += DeltaStamina;
+		}
+		else
+		{
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	default:
+		;
+
+	}	
 
 }
 
@@ -110,8 +220,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void ANelia::MoveForward(float Value)
 {
-	//bMovingForward = false;
-	if ((Controller != nullptr)) //&& (Value != 0.0f) && (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
+	bMovingForward = false;
+	if ((Controller != nullptr) && (Value != 0.0f)) //&& (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
 	{
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -120,13 +230,13 @@ void ANelia::MoveForward(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
 
-		//bMovingForward = true;
+		bMovingForward = true;
 	}
 }
 
 void ANelia::MoveRight(float Value)
 {
-	//bMovingRight = false;
+	bMovingRight = false;
 	if ((Controller != nullptr) && (Value != 0.0f)) //&& (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
 	{
 		//find out which way is forward
@@ -136,7 +246,7 @@ void ANelia::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, Value);
 
-		//bMovingRight = true;
+		bMovingRight = true;
 	}
 }
 
