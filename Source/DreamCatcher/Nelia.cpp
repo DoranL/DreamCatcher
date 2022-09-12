@@ -25,7 +25,7 @@ ANelia::ANelia()
 	CameraBoom->bUsePawnControlRotation = true;						//컨트롤러에 따라 CameraArm 회전
 
 	
-	GetCapsuleComponent()->SetCapsuleSize(17.f, 64.f);				//Nelia의 캡슐 높이와 반지름 지정
+	GetCapsuleComponent()->SetCapsuleSize(20.f, 76.f);				//Nelia의 캡슐 높이와 반지름 지정
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));		 
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
