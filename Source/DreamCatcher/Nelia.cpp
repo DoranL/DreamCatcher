@@ -9,8 +9,9 @@
 #include "Engine/World.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-
+#include "Kismet/KismetSystemLibrary.h"
+#include "Weapon.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -59,6 +60,7 @@ ANelia::ANelia()
 	SprintingSpeed = 950.f;
 
 	bShiftKeyDown = false;
+	bPickup = false;
 
 	//Initialize Enums
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -206,8 +208,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ANelia::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ANelia::ShiftKeyUp);
 
-	//PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &ANelia::LMBDown);
-	//PlayerInputComponent->BindAction("LMB", IE_Released, this, &ANelia::LMBUp);
+	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
+	PlayerInputComponent->BindAction("Pickup", IE_Released, this, &ANelia::PickupReleas);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ANelia::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ANelia::MoveRight);
@@ -259,6 +261,25 @@ void ANelia::TurnAtRate(float Rate)
 void ANelia::LookUpAtRate(float Rate)
 {
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void ANelia::PickupPress()
+{
+	bPickup = true;
+	if (ActiveOverlappingItem)
+	{
+		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+		if (Weapon)
+		{
+			Weapon->Equip(this);
+			SetActiveOverlappingItem(nullptr);
+		}
+	}
+}
+
+void ANelia::PickupReleas()
+{
+	bPickup = false;
 }
 
 void ANelia::SetMovementStatus(EMovementStatus Status)
