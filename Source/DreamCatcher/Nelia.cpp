@@ -12,6 +12,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -71,13 +73,13 @@ ANelia::ANelia()
 
 	bMovingForward = false;
 	bMovingRight = false;
+
 }
 
 // Called when the game starts or when spawned
 void ANelia::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -208,6 +210,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ANelia::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ANelia::ShiftKeyUp);
 
+	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ANelia::Dash);
+
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
 	PlayerInputComponent->BindAction("Pickup", IE_Released, this, &ANelia::PickupReleas);
 
@@ -223,7 +227,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void ANelia::MoveForward(float Value)
 {
 	bMovingForward = false;
-	if ((Controller != nullptr) && (Value != 0.0f)) //&& (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
+	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking)) //&& (MovementStatus != EMovementStatus::EMS_Death))
 	{
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -239,7 +243,7 @@ void ANelia::MoveForward(float Value)
 void ANelia::MoveRight(float Value)
 {
 	bMovingRight = false;
-	if ((Controller != nullptr) && (Value != 0.0f)) //&& (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
+	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking)) //&& (MovementStatus != EMovementStatus::EMS_Death))
 	{
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -275,6 +279,10 @@ void ANelia::PickupPress()
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
+	if (EquippedWeapon)
+	{
+		Attack();
+	}
 }
 
 void ANelia::PickupReleas()
@@ -303,4 +311,53 @@ void ANelia::ShiftKeyDown()
 void ANelia::ShiftKeyUp()
 {
 	bShiftKeyDown = false;
+}
+
+void ANelia::Attack()
+{
+	if (!bAttacking) //&& MovementStatus != EMovementStatus::EMS_Death)
+	{
+		bAttacking = true;
+		//SetInterpToEnemy(true);
+
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && CombatMontage)
+		{
+			int32 Section = FMath::RandRange(0, 1);
+			switch (Section)
+			{
+			case 0:
+				AnimInstance->Montage_Play(CombatMontage, 2.2f);
+				AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
+				break;
+			case 1:
+				AnimInstance->Montage_Play(CombatMontage, 1.8f);
+				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
+				break;
+			default:
+				;
+			}
+		}
+	}
+}
+
+void ANelia::AttackEnd()
+{
+	bAttacking = false;
+	//SetInterpToEnemy(false);
+	if (bPickup)
+	{
+		Attack();
+	}
+}
+////////
+void ANelia::Dash()
+{
+	const FVector ForwardDir = this->GetActorRotation().Vector();
+	LaunchCharacter(ForwardDir * DashDistance, true, true);
+	if (DashMontage && bDash)
+	{
+		PlayAnimMontage(DashMontage, 1, NAME_None);
+		bDash = false;
+	}
 }

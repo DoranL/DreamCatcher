@@ -147,4 +147,25 @@ public:
 
 	//FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
 	FORCEINLINE void SetActiveOverlappingItem(AItem* Item) { ActiveOverlappingItem = Item; }
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool bAttacking;
+
+	void Attack();
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* CombatMontage;
+
+	
+	/// ////////////////////
+	UPROPERTY(EditAnywhere)
+	class UAnimMontage* DashMontage;
+	
+	//////////////////////////////////////////////////
+	float DashDistance = 4000;
+	bool bDash = true;
+	void Dash();
 };
