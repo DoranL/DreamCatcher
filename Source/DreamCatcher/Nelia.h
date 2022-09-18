@@ -168,4 +168,5 @@ public:
 	float DashDistance = 4000;
 	bool bDash = true;
 	void Dash();
+
 };
