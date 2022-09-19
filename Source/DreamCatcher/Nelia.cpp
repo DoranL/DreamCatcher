@@ -324,20 +324,28 @@ void ANelia::Attack()
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage)
 		{
-			int32 Section = FMath::RandRange(0, 1);
+			int32 Section = combatCount;
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 2.2f);
+				AnimInstance->Montage_Play(CombatMontage, 2.4f);
 				AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.8f);
+				AnimInstance->Montage_Play(CombatMontage, 2.3f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
+			case 2:
+				AnimInstance->Montage_Play(CombatMontage, 1.5f);
+				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 			default:
 				;
 			}
+		}
+		combatCount++;
+		if (combatCount > 2)
+		{
+			combatCount = 0;
 		}
 	}
 }

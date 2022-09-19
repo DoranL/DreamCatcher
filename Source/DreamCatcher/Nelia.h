@@ -151,6 +151,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bAttacking;
 
+	int combatCount = 0;
+
 	void Attack();
 
 	UFUNCTION(BlueprintCallable)
