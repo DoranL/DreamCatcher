@@ -36,6 +36,9 @@ public:
 	// Sets default values for this character's properties
 	ANelia();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UParticleSystem* HitParticles;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EMovementStatus MovementStatus;
 
@@ -103,6 +106,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void Jump() override;
+	virtual void StopJumping() override;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -166,9 +172,21 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UAnimMontage* DashMontage;
 	
-	//////////////////////////////////////////////////
-	float DashDistance = 4000;
+	UPROPERTY(VisibleAnywhere)
+	float DashDistance = 3000.f;
+
+	UPROPERTY(VisibleAnywhere)
 	bool bDash = true;
 	void Dash();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	bool bJump;
+
+	//timer
+	FTimerHandle DashTimer;
+
+	void CanDash();
+
+	class UMainAnimInstance* MainAnimInstance;
 
 };

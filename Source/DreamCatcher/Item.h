@@ -19,11 +19,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
 
+	/** Base nesh component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
+	class UStaticMeshComponent* Mesh;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	class UParticleSystemComponent* IdleParticlesComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	class UParticleSystem* OverlapParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Sounds")
+	class USoundCue* OverlapSound;
+
+	
 
 protected:
 	// Called when the game starts or when spawned

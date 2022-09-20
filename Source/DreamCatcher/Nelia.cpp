@@ -15,6 +15,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Enemy.h"
+#include "MainAnimInstance.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -83,12 +84,40 @@ void ANelia::BeginPlay()
 	Super::BeginPlay();
 }
 
+void ANelia::Jump()
+{
+	Super::Jump();
+	bJump = true;
+}
+
+void ANelia::StopJumping()
+{
+	Super::StopJumping();
+	bJump = false;
+}
+
 // Called every frame
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (!MainAnimInstance)
+	{
+		MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+	}
 
+	/*if (MainAnimInstance->bIsInAir)
+	{
+		DashDistance = 50.f;
+		UE_LOG(LogTemp, Warning, TEXT("50"));
 
+	}
+	else
+	{
+		DashDistance = 3000.f;
+		UE_LOG(LogTemp, Warning, TEXT("3000"));
+
+	}*/
 
 	//if (MovementStatus == EMovementStatus::EMS_Death) return;
 
@@ -206,7 +235,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	//입력 받은 키에 따라 해당 이름에 맞는 함수 호출? JUMP, 이동, 캐릭터 회전등 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ANelia::Jump);				
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ANelia::StopJumping);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ANelia::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ANelia::ShiftKeyUp);
@@ -321,23 +350,22 @@ void ANelia::Attack()
 		bAttacking = true;
 		//SetInterpToEnemy(true);
 
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance && CombatMontage)
+		if (MainAnimInstance && CombatMontage)
 		{
 			int32 Section = combatCount;
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 2.4f);
-				AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
+				MainAnimInstance->Montage_Play(CombatMontage, 2.4f);
+				MainAnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 2.3f);
-				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
+				MainAnimInstance->Montage_Play(CombatMontage, 2.3f);
+				MainAnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.5f);
-				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
+				MainAnimInstance->Montage_Play(CombatMontage, 1.5f);
+				MainAnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 			default:
 				;
 			}
@@ -363,10 +391,23 @@ void ANelia::AttackEnd()
 void ANelia::Dash()
 {
 	const FVector ForwardDir = this->GetActorRotation().Vector();
-	LaunchCharacter(ForwardDir * DashDistance, true, true);
+
+
 	if (DashMontage && bDash)
 	{
-		PlayAnimMontage(DashMontage, 1, NAME_None);
+		//LaunchCharacter(ForwardDir * DashDistance, true, true);
+		//PlayAnimMontage(DashMontage);
+
+		MainAnimInstance->Montage_Play(CombatMontage);
+		MainAnimInstance->Montage_JumpToSection(FName("roll"), CombatMontage);
 		bDash = false;
+
+		GetWorldTimerManager().SetTimer(DashTimer, this, &ANelia::CanDash, 2.f);
 	}
+}
+
+void ANelia::CanDash()
+{
+	bDash = true;
+	GetWorldTimerManager().ClearTimer(DashTimer);
 }

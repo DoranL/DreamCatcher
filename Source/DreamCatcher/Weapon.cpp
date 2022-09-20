@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Nelia.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Sound/SoundCue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -23,6 +24,7 @@ AWeapon::AWeapon()
 	Damage = 25.f;
 }
 
+
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
@@ -34,11 +36,12 @@ void AWeapon::BeginPlay()
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
 }
 
 void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	//Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 	if (OtherActor)//(WeaponState == EWeaponState::EWS_Pickup) && OtherActor)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
@@ -86,8 +89,8 @@ void AWeapon::Equip(ANelia* Char)
 			//	bRotate = false;
 
 			Char->SetEquippedWeapon(this);
-			//	Char->SetActiveOverlappingItem(nullptr);
-			//}
+			Char->SetActiveOverlappingItem(nullptr);
+			
 			//if (OnEquipSound) UGameplayStatics::PlaySound2D(this, OnEquipSound);
 			if (!bWeaponParticles)
 			{
@@ -102,18 +105,29 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	if (OtherActor)
 	{
+		
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy)
 		{
-			if (Enemy->HitParticles)
+			UE_LOG(LogTemp, Warning, TEXT("FIRST"));
+			const USkeletalMeshSocket* WeaponSocket = SkeletalMesh->GetSocketByName("WeaponSocket");
+			if (WeaponSocket)
 			{
+
+				FVector SocketLocation = WeaponSocket->GetSocketLocation(SkeletalMesh);
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticles, SocketLocation, FRotator(0.f), false);
+			}
+			/*if (Enemy->HitParticles)
+			{
+				
 				const USkeletalMeshSocket* WeaponSocket = SkeletalMesh->GetSocketByName("WeaponSocket");
-				if (WeaponSocket)
+				if (WeaponSocket && )
 				{
+					
 					FVector SocketLocation = WeaponSocket->GetSocketLocation(SkeletalMesh);
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
-			}
+			}*/
 			/*if (Enemy->HitSound)
 			{
 				UGameplayStatics::PlaySound2D(this, Enemy->HitSound);
@@ -128,4 +142,14 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 void AWeapon::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 
+}
+
+void AWeapon::ActivateCollision()
+{
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AWeapon::DeactivateCollision()
+{
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

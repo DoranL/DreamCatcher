@@ -17,7 +17,8 @@ class DREAMCATCHER_API AWeapon : public AItem
 public:
 	AWeapon();
 
-
+	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	//EWeaponState WeaponState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	bool bWeaponParticles;
@@ -48,11 +49,13 @@ public:
 	UFUNCTION()
 	void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	//UFUNCTION(BlueprintCallable)
-	//void ActivateCollision();
+	//FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
+	//FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
+	UFUNCTION(BlueprintCallable)
+	void ActivateCollision();
 
-	//UFUNCTION(BlueprintCallable)
-	//void DeactivateCollision();
+	UFUNCTION(BlueprintCallable)
+	void DeactivateCollision();
 
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	//TSubclassOf<UDamageType> DamageTypeClass;
