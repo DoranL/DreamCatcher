@@ -17,14 +17,14 @@ class DREAMCATCHER_API AWeapon : public AItem
 public:
 	AWeapon();
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
-	//EWeaponState WeaponState;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	bool bWeaponParticles;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SkeletalMesh")
 	class USkeletalMeshComponent* SkeletalMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Sound")
+	USoundCue* SwingSound;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item | Combat")
 	class UBoxComponent* CombatCollision;
@@ -49,20 +49,17 @@ public:
 	UFUNCTION()
 	void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	//FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
-	//FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
 	UFUNCTION(BlueprintCallable)
 	void ActivateCollision();
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	//TSubclassOf<UDamageType> DamageTypeClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	//AController* WeaponInstigator;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	AController* WeaponInstigator;
 
-	//FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
-
+	FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
 };

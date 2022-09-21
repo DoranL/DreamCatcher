@@ -71,7 +71,7 @@ void AWeapon::Equip(ANelia* Char)
 	if (Char)
 	{
 
-		//SetInstigator(Char->GetController());
+		SetInstigator(Char->GetController());
 
 		//이게 무기가 카메라를 가려도 확대하지 않고 무시한다는 내용인가요?
 		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -128,14 +128,14 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
 			}*/
-			/*if (Enemy->HitSound)
+			if (Enemy->HitSound)
 			{
 				UGameplayStatics::PlaySound2D(this, Enemy->HitSound);
-			}*/
-		/*	if (DamageTypeClass)
+			}
+			if (DamageTypeClass)
 			{
 				UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
-			}*/
+			}
 		}
 	}
 }

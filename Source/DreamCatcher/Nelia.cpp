@@ -16,6 +16,8 @@
 #include "Animation/AnimInstance.h"
 #include "Enemy.h"
 #include "MainAnimInstance.h"
+#include "Sound/SoundCue.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -72,6 +74,9 @@ ANelia::ANelia()
 
 	StaminaDrainRate = 25.f;
 	MinSprintStamina = 50.f;	
+
+	InterpSpeed = 15.f;
+	bInterpToEnemy = false;
 
 	bMovingForward = false;
 	bMovingRight = false;
@@ -224,6 +229,30 @@ void ANelia::Tick(float DeltaTime)
 
 	}	
 
+	if (bInterpToEnemy && CombatTarget)
+	{
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+
+		SetActorRotation(InterpRotation);
+	}
+
+	/*if (CombatTarget)
+	{
+		CombatTargetLocation = CombatTarget->GetActorLocation();
+		if (MainPlayerController)
+		{
+			MainPlayerController->EnemyLocation = CombatTargetLocation;
+		}
+	}*/
+}
+
+FRotator ANelia::GetLookAtRotationYaw(FVector Target)
+{
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+	FRotator LookAtRotationYaw(0.f, LookAtRotation.Yaw, 0.f);
+	return LookAtRotationYaw;
 }
 
 // Called to bind functionality to input
@@ -320,6 +349,43 @@ void ANelia::PickupReleas()
 	bPickup = false;
 }
 
+void ANelia::DecrementHealth(float Amount)
+{
+	if (Health - Amount <= 0.f)
+	{
+		Health -= Amount;
+		Die();
+	}
+	else
+	{
+		Health -= Amount;
+	}
+}
+
+void ANelia::IncrementHealth(float Amount)
+{
+	if (Health + Amount >= MaxHealth)
+	{
+		Health = MaxHealth;
+	}
+	else
+	{
+		Health += Amount;
+	}
+}
+
+void ANelia::Die()
+{
+	if (MovementStatus == EMovementStatus::EMS_Death) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && CombatMontage)
+	{
+		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(FName("Death"));
+	}
+	SetMovementStatus(EMovementStatus::EMS_Death);
+}
+
 void ANelia::SetMovementStatus(EMovementStatus Status)
 {
 	MovementStatus = Status;
@@ -348,7 +414,7 @@ void ANelia::Attack()
 	if (!bAttacking) //&& MovementStatus != EMovementStatus::EMS_Death)
 	{
 		bAttacking = true;
-		//SetInterpToEnemy(true);
+		SetInterpToEnemy(true);
 
 		if (MainAnimInstance && CombatMontage)
 		{
@@ -381,7 +447,7 @@ void ANelia::Attack()
 void ANelia::AttackEnd()
 {
 	bAttacking = false;
-	//SetInterpToEnemy(false);
+	SetInterpToEnemy(false);
 	if (bPickup)
 	{
 		Attack();
@@ -410,4 +476,39 @@ void ANelia::CanDash()
 {
 	bDash = true;
 	GetWorldTimerManager().ClearTimer(DashTimer);
+}
+
+void ANelia::PlaySwingSound()
+{
+	if (EquippedWeapon->SwingSound)
+	{
+		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
+	}
+}
+
+void ANelia::SetInterpToEnemy(bool Interp)
+{
+	bInterpToEnemy = Interp;
+}
+
+float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+	if (Health - DamageAmount <= 0.f)
+	{
+		Health -= DamageAmount;
+		Die();
+		if (DamageCauser)
+		{
+			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
+			if (Enemy)
+			{
+			//	Enemy->bHasValidTarget = false;
+			}
+		}
+	}
+	else
+	{
+		Health -= DamageAmount;
+	}
+	return DamageAmount;
 }
