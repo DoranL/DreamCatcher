@@ -6,10 +6,10 @@
 #include "GameFramework/Character.h"
 #include "Nelia.generated.h"
 
-UENUM(BlueprintType)					  //블루프린트에서 사용 가능하도록 타입을 넣어줌
+UENUM(BlueprintType)					  //블루프린트에서 Nelia 이동 설정할 때 열거형으로 Normal, Sprinting, Dead 중 하나 선택 가능
 enum class EMovementStatus : uint8        //enum클래스 열거형 
 {
-	EMS_Normal		 UMETA(DisplayName = "Normal"), //열거자들의 이름을 추가 DisplayName에 넣은 이름이 언리얼 엔진에서 보여지는 이름
+	EMS_Normal		 UMETA(DisplayName = "Normal"), 
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
 
@@ -36,20 +36,26 @@ public:
 	// Sets default values for this character's properties
 	ANelia();
 
+	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 UParticleSystem 클래스형 변수인 HitParticles 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 파티클
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UParticleSystem* HitParticles;
 
+	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 USoundCue 클래스형 변수인 HitSound 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 사운드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class USoundCue* HitSound;
 
+	//속성 창에서 보여지나 편집이 불가능하고 블루프린터에서 읽기쓰기가 가능한 위에서 선언한 enum 클래스형 EMovementStatus형 MovementStatus 변수 생성 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EMovementStatus MovementStatus;
 
+	//속성 창에서 보여지나 편집이 불가능하고 블루프린터에서 읽기쓰기가 가능한 위에서 선언한 enum 클래스형 EStaminaSatus형 StaminaStatus 변수 생성
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EStaminaStatus StaminaStatus;
 
+	//인라인 함수를 강제로 수행하는 FORCEINLINE을 사용하여 /////////////// 함수호출 부분의 내용을 가져온다>??????//
 	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
 
+	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 float형 변수인 StaminDrainRate 생성
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float StaminaDrainRate;
 

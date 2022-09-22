@@ -25,23 +25,27 @@ ANelia::ANelia()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//Create Camera boom(충격이 있는 경우 플레이어를 향해 당김)
+	//헤더에서 어디서든 볼 수 있지만 편집할 수 없고 블루프린터에서 오직 읽기만 가능하며 private일지라도 에디터에서 볼 수 있는 USpringArm 클래스형 변수인 CameraBoom을 선언
+	//의문점 1. 왜 굳이 public으로 선언해 놓고 meta = (AllowPrivateAcess = "true")를 했을까?
+	//CameraBoom은 블루프린터에서 볼 수 있듯이 카메라와 Nelia 사이를 연결해주고 있는 빨간 선이며 TEXT - CameraBoom값을 변경하면 블루프린터에서 확인할 수 있다.
+	//SetupAttachment(GetRootComponent())는 CameraBoom을 자식 컴포넌트로 추가하겠다는 의미이고 블루프린터에서 보면 Nelia의 캡슐컴포넌트(==GetRootComponent)에 부착되어 있는 것을 볼 수 있다
+	//CameraBoom의 길이는 400.f이고 bUsePawnControlRotation은 마우스 이동으로 화면 상하좌우 이동을 가능하도록 한다.
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));   
 	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->TargetArmLength = 400.f;							//카메라가 Neila와 400떨어진 위치를 고정으로 따라옴
-	CameraBoom->bUsePawnControlRotation = true;						//컨트롤러에 따라 CameraArm 회전
+	CameraBoom->TargetArmLength = 400.f;							
+	CameraBoom->bUsePawnControlRotation = true;						
 
-	
-	GetCapsuleComponent()->SetCapsuleSize(20.f, 76.f);				//Nelia의 캡슐 높이와 반지름 지정
+	GetCapsuleComponent()->SetCapsuleSize(20.f, 76.f);				//Nelia의 캡슐 크기를 c++울 통해 조정 가능
 
+	//헤더에서 어디서든 볼 수 있지만 편집할 수 없고 블루프린터에서 오직 읽기만 가능하며 private일지라도 에디터에서 볼 수 있는 UCameraComponent 클래스형 변수인 FollowCamera를 선언
+	//FollowCamera를 카메라붐 끝에 부분 부착시킨다. FollowCamera는 이미 CameraBoom이 좌우로 돌면 같이 돌아갈 필요가 없기 때문에 false로 둔다. 단 CameraBoomdml bUsePawnControlRotation을 false로두고
+	//FollowCamera에서 true로 두면 Nelia를 기준으로 회전하지 않고 카메라를 기준으로 회전하기 때문에 캐릭터로부터 400.f 위치에서 홀로 돌아가게 되어 그렇게 설정하면 안된다.
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));		 
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	//Attach the camera to the end of the boom and let the boom adjust to match
-	//the controller orientation
 	FollowCamera->bUsePawnControlRotation = false;
 
-	//Set our turn rates for input
-	//키 입력 시 1초동안 65씩 회전
+	//헤더에서 어디서든 볼 수 있지만 편집할 수 없고 블루프린터에서 오직 읽기만 가능하도로 설정
+	//키 입력 시 1초동안 65씩 회전 BaseTurnRate는 프로젝트 세팅 입력창에서 볼 수 있듯이 좌우 회전 비율이고 BaseLookupRate는 상하 회전 비율이다.
 	BaseTurnRate = 65.f;
 	BaseLookUpRate = 65.f;
 
@@ -56,12 +60,15 @@ ANelia::ANelia()
 	GetCharacterMovement()->JumpZVelocity = 650.f; //점프하는 힘
 	GetCharacterMovement()->AirControl = 0.2f; //중력의 힘
 
+	//헤더에서 max의 경우 인스턴스가 공통으로 가져야 할 값의 편집이 가능하도록 설정 그리고 블루프린터에서 읽기만 가능하다.
+	//Health와 Stamina는 어디서든 편집 가능하고 블루프린터에서 읽고 쓰는 것이 가능하다.
 	MaxHealth = 100.f;
 	Health = 65.f;
 	MaxStamina = 150.f;
 	Stamina = 120.f;
-	Coins = 0;
 
+	//어디서든 편집 가능하고 블루프린터에서 읽고 쓰기가 가능하다.
+	//
 	RunningSpeed = 650.f;
 	SprintingSpeed = 950.f;
 
