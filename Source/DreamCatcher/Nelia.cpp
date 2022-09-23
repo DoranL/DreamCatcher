@@ -68,34 +68,45 @@ ANelia::ANelia()
 	Stamina = 120.f;
 
 	//어디서든 편집 가능하고 블루프린터에서 읽고 쓰기가 가능하다.
-	//
+	//Left Shift 키를 누르면 캐릭터 MaxWalkSpeed를 SprintingSpeed 값을 넣어 속도를 950.f만큼으로 이동하고 그렇지 않을 경우는 RunningSpeed 값을 넣어 
+	//650.f 속도로 이동시킨다.
 	RunningSpeed = 650.f;
 	SprintingSpeed = 950.f;
 
+	
 	bShiftKeyDown = false;
 	bPickup = false;
 
-	//Initialize Enums
+	//열거형 EMovementStatus와 EStaminaStatus를 ESS_Normal로 초기화 시켜줌
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
 
+	//어디서든 편집 가능하고 블루프린터에서 읽고 쓰기가 가능한 float형 변수
+	//StaminaDrainRate는 시간당 스테미나 소비량인 DeltaStamina 수식에 사용 DeltaStamina = StaminaDrainRate * DeltaTime;
+	//MinSprintStamina는 아래 스위치 문에서 최소 스프린트 수치 이하일 경우 BelowMinimum(최소 이하) 상태로 변환하고 이 상태에서 스프린터키를 
+	//누르게 되면 Exhausted 상태로 변화하여 달릴 수 없게됨
 	StaminaDrainRate = 25.f;
 	MinSprintStamina = 50.f;	
 
+	//
 	InterpSpeed = 15.f;
 	bInterpToEnemy = false;
 
+	
 	bMovingForward = false;
 	bMovingRight = false;
 
+	bHasCombatTarget = false;
 }
 
-// Called when the game starts or when spawned
+//게임 플레이 시 재정의 되는 부분
 void ANelia::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
+//Super::Jump는 Nelia 클래스의 부모 클래스에 있는 점프를 상속 받아서 불러오는 것이고 아래 bJump는 대쉬를 하는 도중에 점프를 하게 되어서 애니메이션 오류가 발생하여 
+//부모 클래스에 있는 점프에 대한 정보를 변경하기에는 문제가 발생할 수 있으므로 헤더에서 점프를 override해서  다른 것은 부모의 점프를 상속 받고 bJump는 부모가 아닌 Nelia에 정의하여 사용하는 것
 void ANelia::Jump()
 {
 	Super::Jump();
@@ -108,7 +119,8 @@ void ANelia::StopJumping()
 	bJump = false;
 }
 
-// Called every frame
+//매 프레임마다 호출되는 부분 헤더에서 UMainAnimInstance 클래스형 변수인 MainAnimInstance 생성
+//만약 MainAnimInstance가 아니면 GetMesh(넬리아)에 있는 애니메이션 인스턴스를 가져오고 UMainAnimInstance로 형변환 후 MainAnimInstance에 대입
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -133,10 +145,16 @@ void ANelia::Tick(float DeltaTime)
 
 	//if (MovementStatus == EMovementStatus::EMS_Death) return;
 
+
+	//시간 당 스테미나 소비량 = 스테미나소비율 * 프레임 
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
 	switch (StaminaStatus)
 	{
+	//처음에는 ESS_Normal로 초기화 되어있고 120으로 초기화 되어있는 스테미나 - 시간 당 스테미나 소비량이 최소 스테미나 양보다 적으면 스태미나 상태를 최소 이하로 바꾸고
+	//스프린팅 상태에서 이동키를 누를 때는 스프린팅 상태 그렇지 않을 경우에는 일반적인 상태? idle?
+	//shift키 버튼을 안 누른 상태일 때 기존 스테미나 + 시간 당 스테미나 사용량 이 최대 스테미나 값보다 크면 스테미나를 최대 스테미나 값으로 초기화 시켜줌
+	//최대 스테미나 값보다 크지 않을 경우에는 그냥 DeltaStamina 만큼 씩 더해줌 상태는 EMS_Normal
 	case EStaminaStatus::ESS_Normal:
 		if (bShiftKeyDown)
 		{
@@ -161,6 +179,7 @@ void ANelia::Tick(float DeltaTime)
 				}
 			}
 		}
+
 		else //shift key up
 		{
 			if (Stamina + DeltaStamina >= MaxStamina)
@@ -175,6 +194,10 @@ void ANelia::Tick(float DeltaTime)
 		}
 		break;
 
+	//상태가 최소 이하일 때 Left Shift 키 입력 시 스테미나 - 시간 당 스테미나 소비량이 0.f보다 작거나 같으면 상태는 지침 상태로 주고 
+	//스테미나를 0으로 초기화 이동 상태는 EMS_Normal로 둠 0.f보다 클 경우 기존 스테미나에서 시간 당 스테미나 소비량을 빼고 상태를 스프린터로 둔다.
+	//Left Shift키를 누르지 않았을 때 스테미나 + 시간 당 스테미나 사용량이 최소 스프린터 가능 스테미나보다 크거나 같으면 스테미나 상태를 ESS_Normal로 두고
+	//Stamina += DeltaStamina이고 Stamina + DeltaStamina <MinSprintStamina 일 때 동일하게 Stamina += DeltaStamina 상태는 EMS_Normal
 	case EStaminaStatus::ESS_BelowMinimum:
 		if (bShiftKeyDown)
 		{
@@ -205,6 +228,8 @@ void ANelia::Tick(float DeltaTime)
 		}
 		break;
 
+	//스테미나 고갈 상태일 때 Left Shift 누르면 스테미나를 0.f로 초기화 키 입력을 안하고 있다면 스테미나 상태를 ESS_ExhaustedRecovering상태로 둔다.
+	//키를 안 누르고 있기 때문에 Stamina += DeltaStamina; 계속해서 스테미나 증가 시키고 이동 상태는 EMS_Normal로 둠
 	case EStaminaStatus::ESS_Exhausted:
 		if (bShiftKeyDown)
 		{
@@ -217,6 +242,7 @@ void ANelia::Tick(float DeltaTime)
 		}
 		SetMovementStatus(EMovementStatus::EMS_Normal);
 		break;
+	//ESS_ExhaustedRecovering 상태일 때는 최소 스프린팅 스테미나보다 크면 상태를 스테미나 상태를 일반으로 두고 매 프레임당 스테미나를 증가 시켜준다.
 
 	case EStaminaStatus::ESS_ExhaustedRecovering:
 		if (Stamina + DeltaStamina >= MinSprintStamina)
@@ -236,6 +262,9 @@ void ANelia::Tick(float DeltaTime)
 
 	}	
 
+	//적을 바라보고 있고 전투대상이 있으면 실행되고 
+	//LookAtYaw = 전투 대상의 위치를 받고 전투 대상과 플레이어의 회전 보간은 InterpRotation = 플레이어의 회전 정도, 전투대상 위치, 프레임당 , 보간 속도)를 
+	//받아 SetActorRotation(InterpRotation)을 사용하여 보간을 한다. 즉 전투 대상의 위치를 받고 대상을 바라 보기 위한 회전 값을 받아서 SetActorRotation(InterpRotation)을 통해 보간한다.
 	if (bInterpToEnemy && CombatTarget)
 	{
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
@@ -265,7 +294,7 @@ FRotator ANelia::GetLookAtRotationYaw(FVector Target)
 // Called to bind functionality to input
 void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);					//키보드 입력 값을 전달받는 폰의 함수
+	Super::SetupPlayerInputComponent(PlayerInputComponent);					
 	check(PlayerInputComponent);											//입력받은 키를 확인
 
 
@@ -290,12 +319,14 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("LokkUpRate", this, &ANelia::LookUpAtRate);
 }
 
+
+//플레이어 컨트롤러가 있고 w,a,s,d 중 하나를 입력 중이고 현재 공격을 하고 있지 않을 때 Nelia 컨트롤러 방향 값을 받아 Rotation에 주고
+//
 void ANelia::MoveForward(float Value)
 {
 	bMovingForward = false;
-	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking)) //&& (MovementStatus != EMovementStatus::EMS_Death))
+	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking))
 	{
-		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
@@ -322,7 +353,7 @@ void ANelia::MoveRight(float Value)
 	}
 }
 
-//키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능   ///getworld?
+//키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능  
 void ANelia::TurnAtRate(float Rate)
 {
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
@@ -486,7 +517,7 @@ void ANelia::CanDash()
 }
 
 void ANelia::PlaySwingSound()
-{
+{ 
 	if (EquippedWeapon->SwingSound)
 	{
 		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
