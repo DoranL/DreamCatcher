@@ -15,15 +15,51 @@ void AMainPlayerController::BeginPlay()
 	HUDOverlay->AddToViewport();
 	HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 
-	//if (WEnemyHealthBar)
-	//{
-	//	EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
-	//	if (EnemyHealthBar)
-	//	{
-	//		EnemyHealthBar->AddToViewport();
-	//		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
-	//	}
-	//	FVector2D Alignment(0.f, 0.f);
-	//	EnemyHealthBar->SetAlignmentInViewport(Alignment);
-	//}
+	if (WEnemyHealthBar)
+	{
+		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
+		if (EnemyHealthBar)
+		{
+			EnemyHealthBar->AddToViewport();
+			EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
+		}
+		FVector2D Alignment(0.f, 0.f);
+		EnemyHealthBar->SetAlignmentInViewport(Alignment);
+	}
+}
+
+void AMainPlayerController::DisplayEnemyHealthBar()
+{
+	if (EnemyHealthBar)
+	{
+		bEnemyHealthBarVisible = true;
+		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void AMainPlayerController::RemoveEnemyHealthBar()
+{
+	if (EnemyHealthBar)
+	{
+		bEnemyHealthBarVisible = false;
+		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void AMainPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (EnemyHealthBar)
+	{
+		FVector2D PositionInViewport;
+		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
+		PositionInViewport.Y -= 160.f;
+		PositionInViewport.X -= 60.f;
+		//체력 바 길이
+		FVector2D SizeInViewport = FVector2D(250.f, 25.f);
+
+		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
+		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);
+	}
 }

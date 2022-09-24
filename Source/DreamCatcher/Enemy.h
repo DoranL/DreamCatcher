@@ -27,6 +27,9 @@ public:
 	// Sets default values for this character's properties
 	AEnemy();
 
+	//캐릭터가 죽고 나서 계속 공격 당하는 걸 막는 bool 변수
+	bool bHasValidTarget;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	EEnemyMovementStatus EnemyMovementStatus;
 
@@ -65,10 +68,15 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* CombatCollision;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UBoxComponent* CombatCollisionLeft;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* CombatMontage;
 
 	FTimerHandle AttackTimer;
+
+	int EnemyAttackCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float AttackMinTime;
@@ -136,7 +144,7 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-	void Die();
+	void Die(AActor* Causer);
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();

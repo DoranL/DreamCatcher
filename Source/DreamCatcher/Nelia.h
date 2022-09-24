@@ -39,6 +39,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bHasCombatTarget;
 
+	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
+
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
+	FVector CombatTargetLocation;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class AMainPlayerController* MainPlayerController;
 
 	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 UParticleSystem 클래스형 변수인 HitParticles 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 파티클
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -191,7 +199,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bAttacking;
 
-	int combatCount = 0;
+	int AttackMotionCount = 0;
 
 	void Attack();
 
@@ -225,4 +233,14 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
+
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
+
+	void UpdateCombatTarget();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<AEnemy> EnemyFilter;
+
+	void SwitchLevel(FName LevelName);
 };

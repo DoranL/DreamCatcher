@@ -15,6 +15,7 @@
 #include "Sound/SoundCue.h"
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
+#include "MainPlayerController.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -35,6 +36,10 @@ AEnemy::AEnemy()
 	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
 	CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket"));
 
+	CombatCollisionLeft = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollisionL"));
+	CombatCollisionLeft->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket1"));
+
+
 	bOverlappingCombatSphere = false;
 
 	Health = 75.f;
@@ -47,6 +52,8 @@ AEnemy::AEnemy()
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
 	DeathDelay = 3.f;
+
+	bHasValidTarget = false;
 }
 
 // Called when the game starts or when spawned
@@ -65,10 +72,18 @@ void AEnemy::BeginPlay()
 	CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
 	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
+	CombatCollisionLeft->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+	CombatCollisionLeft->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CombatCollisionLeft->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	CombatCollisionLeft->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	CombatCollisionLeft->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	//몬스터가 플레이어를 때릴 때 카메라에 가려지는 것 막는 코드(Mesh(적 테두리), capsule(내가 설정한 캡슐)이 카메라 시야에 있게되면
 	//아래 코드가 없을 시 캐릭터를 보여주기 위해 앞으로 당겨지게 되는데 렉 걸린 것 처럼 보여지게 됨 따라서 무시하도록 코드 작성
@@ -109,6 +124,17 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
 		if (Nelia)
 		{
+			bHasValidTarget = false;
+			if (Nelia->CombatTarget == this)
+			{
+				Nelia->SetCombatTarget(nullptr);
+				//Nelia->UpdateCombatTarget();
+			}
+
+			Nelia->SetHasCombatTarget(false);
+
+			Nelia->UpdateCombatTarget();
+
 			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
 			if (AIController)
 			{
@@ -116,29 +142,6 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 			}
 		}
 	}
-	/*if (OtherActor)
-	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
-		{
-			if (Nelia)
-			{
-				bHasValidTarget = false;
-				if (Nelia->CombatTarget == this)
-				{
-					Nelia->SetCombatTarget(nullptr);
-				}
-				Nelia->SetHasCombatTarget(false);
-
-				Nelia->UpdateCombatTarget();
-
-				SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
-				if (AIController)
-				{
-					AIController->StopMovement();
-				}
-			}
-		}
-	}*/
 }
 void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -147,88 +150,45 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
 		if (Nelia)
 		{
+			bHasValidTarget = true;
+
 			Nelia->SetCombatTarget(this);
+			Nelia->SetHasCombatTarget(true);
+			
+			Nelia->UpdateCombatTarget();
 
 			CombatTarget = Nelia;
 			bOverlappingCombatSphere = true;
 			Attack();
 		}
 	}
-	/*if (OtherActor && Alive())
-	{
-		ANelia* Nelia = Cast<AMain>(OtherActor);
-		{
-			if (Nelia)
-			{
-				bHasValidTarget = true;
-				Nelia->SetCombatTarget(this);
-				Nelia->SetHasCombatTarget(true);
-
-				Nelia->UpdateCombatTarget();
-
-				if (Nelia->MainPlayerController)
-				{
-					Nelia->MainPlayerController->DisplayEnemyHealthBar();
-				}
-				CombatTarget = Nelia;
-				bOverlappingCombatSphere = true;
-
-				float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
-				GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
-			}
-		}
-	}*/
 }
 void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor)
+	if (OtherActor && OtherComp)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
 		if (Nelia)
 		{
+			bOverlappingCombatSphere = false;
+			MoveToTarget(Nelia);
+			CombatTarget = nullptr;
+
 			if (Nelia->CombatTarget == this)
 			{
 				Nelia->SetCombatTarget(nullptr);
-				//Nelia->bHasCombatTarget = false;
-				//Nelia->UpdateCombatTarget();
+				Nelia->bHasCombatTarget = false;
+				Nelia->UpdateCombatTarget();
 			}
-			Nelia->SetCombatTarget(nullptr);
-			bOverlappingCombatSphere = false;
-			if (EnemyMovementStatus != EEnemyMovementStatus::EMS_Attacking)
+			if (Nelia->MainPlayerController)
 			{
-				MoveToTarget(Nelia);
-				CombatTarget = nullptr;
+				USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
+				if (NeliaMesh) Nelia->MainPlayerController->RemoveEnemyHealthBar();
 			}
+
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 		}
 	}
-	/*if (OtherActor && OtherComp)
-	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
-		{
-			if (Nelia)
-			{
-				bOverlappingCombatSphere = false;
-				MoveToTarget(Nelia);
-				CombatTarget = nullptr;
-
-				if (Nelia->CombatTarget == this)
-				{
-					Nelia->SetCombatTarget(nullptr);
-					Nelia->bHasCombatTarget = false;
-					Nelia->UpdateCombatTarget();
-				}
-
-				if (Nelia->MainPlayerController)
-				{
-					USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
-					if (NeliaMesh) Nelia->MainPlayerController->RemoveEnemyHealthBar();
-				}
-
-				GetWorldTimerManager().ClearTimer(AttackTimer);
-			}
-		}
-	}*/
 }
 
 //MoveToTarget이 플레이어 콜라이더랑 enemy 콜라이더랑 겹치게 되면 적이 플레이어 쪽으로 이동하도록 되어 있는 함수인듯?
@@ -297,6 +257,7 @@ void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 void AEnemy::ActivateCollision()
 {
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	if (SwingSound)
 	{
@@ -307,11 +268,12 @@ void AEnemy::ActivateCollision()
 void AEnemy::DeactivateCollision()
 {
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AEnemy::Attack()
 {
-	if (Alive())
+	if (Alive() && bHasValidTarget)
 	{
 		if (AIController)
 		{
@@ -325,8 +287,25 @@ void AEnemy::Attack()
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 			if (AnimInstance)
 			{
-				AnimInstance->Montage_Play(CombatMontage, 0.5f);
-				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+				int32 Section = EnemyAttackCount;
+				switch (Section)
+				{
+				case 0:
+					AnimInstance->Montage_Play(CombatMontage, 0.5f);
+					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+					break;
+				case 1:
+					AnimInstance->Montage_Play(CombatMontage, 1.f);
+					AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
+					break;
+				default:
+					;
+				}
+				EnemyAttackCount++;
+				if (EnemyAttackCount > 1)
+				{
+					EnemyAttackCount = 0;
+				}
 			}
 		}
 	}
@@ -347,7 +326,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	if (Health - DamageAmount <= 0.f)
 	{
 		Health -= DamageAmount;
-		Die();//DamageCauser);
+		Die(DamageCauser);
 	}
 	else
 	{
@@ -357,21 +336,30 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	return DamageAmount;
 }
 
-void AEnemy::Die()
+void AEnemy::Die(AActor* Causer)
 {
+	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.35f);
 		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
 	}
-	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
 
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AgroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	bAttacking = false;
+
+	ANelia* Nelia = Cast<ANelia>(Causer);
+	if (Nelia)
+	{
+		Nelia->UpdateCombatTarget();
+	}
 }
 
 void AEnemy::DeathEnd()

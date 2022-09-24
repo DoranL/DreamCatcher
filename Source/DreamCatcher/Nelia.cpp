@@ -18,7 +18,7 @@
 #include "MainAnimInstance.h"
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
-
+#include "MainPlayerController.h"
 // Sets default values
 ANelia::ANelia()
 {
@@ -73,7 +73,6 @@ ANelia::ANelia()
 	RunningSpeed = 650.f;
 	SprintingSpeed = 950.f;
 
-	
 	bShiftKeyDown = false;
 	bPickup = false;
 
@@ -103,15 +102,22 @@ ANelia::ANelia()
 void ANelia::BeginPlay()
 {
 	Super::BeginPlay();
+
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
 }
 
 //Super::Jump는 Nelia 클래스의 부모 클래스에 있는 점프를 상속 받아서 불러오는 것이고 아래 bJump는 대쉬를 하는 도중에 점프를 하게 되어서 애니메이션 오류가 발생하여 
 //부모 클래스에 있는 점프에 대한 정보를 변경하기에는 문제가 발생할 수 있으므로 헤더에서 점프를 override해서  다른 것은 부모의 점프를 상속 받고 bJump는 부모가 아닌 Nelia에 정의하여 사용하는 것
+//if(MovementStatus != EMovementStatus::EMS_Death)는 공격 받은 이후 죽었을 때도 점프가 가능한 상황을 막는 코드 
 void ANelia::Jump()
 {
-	Super::Jump();
-	bJump = true;
+	if (MovementStatus != EMovementStatus::EMS_Death)
+	{
+		Super::Jump();
+		bJump = true;
+	} 
 }
+
 
 void ANelia::StopJumping()
 {
@@ -124,11 +130,6 @@ void ANelia::StopJumping()
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	if (!MainAnimInstance)
-	{
-		MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-	}
 
 	/*if (MainAnimInstance->bIsInAir)
 	{
@@ -143,7 +144,7 @@ void ANelia::Tick(float DeltaTime)
 
 	}*/
 
-	//if (MovementStatus == EMovementStatus::EMS_Death) return;
+	if (MovementStatus == EMovementStatus::EMS_Death) return;
 
 
 	//시간 당 스테미나 소비량 = 스테미나소비율 * 프레임 
@@ -174,9 +175,7 @@ void ANelia::Tick(float DeltaTime)
 			}
 			else
 			{
-				{
-					SetMovementStatus(EMovementStatus::EMS_Normal);
-				}
+				SetMovementStatus(EMovementStatus::EMS_Normal);
 			}
 		}
 
@@ -274,14 +273,14 @@ void ANelia::Tick(float DeltaTime)
 		SetActorRotation(InterpRotation);
 	}
 
-	/*if (CombatTarget)
+	if (CombatTarget)
 	{
 		CombatTargetLocation = CombatTarget->GetActorLocation();
 		if (MainPlayerController)
 		{
 			MainPlayerController->EnemyLocation = CombatTargetLocation;
 		}
-	}*/
+	}
 }
 
 FRotator ANelia::GetLookAtRotationYaw(FVector Target)
@@ -325,7 +324,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void ANelia::MoveForward(float Value)
 {
 	bMovingForward = false;
-	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking))
+	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) &&(MovementStatus!=EMovementStatus::EMS_Death))
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -340,7 +339,7 @@ void ANelia::MoveForward(float Value)
 void ANelia::MoveRight(float Value)
 {
 	bMovingRight = false;
-	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking)) //&& (MovementStatus != EMovementStatus::EMS_Death))
+	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Death))
 	{
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -367,6 +366,9 @@ void ANelia::LookUpAtRate(float Rate)
 void ANelia::PickupPress()
 {
 	bPickup = true;
+
+	if (MovementStatus == EMovementStatus::EMS_Death) return;
+
 	if (ActiveOverlappingItem)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
@@ -376,7 +378,8 @@ void ANelia::PickupPress()
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
-	if (EquippedWeapon)
+	//if(EquippedWeapon) 할 시 무기 장착하면 움직이질 않음
+	else if (EquippedWeapon)
 	{
 		Attack();
 	}
@@ -424,6 +427,12 @@ void ANelia::Die()
 	SetMovementStatus(EMovementStatus::EMS_Death);
 }
 
+void ANelia::DeathEnd()
+{
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+}
+
 void ANelia::SetMovementStatus(EMovementStatus Status)
 {
 	MovementStatus = Status;
@@ -449,14 +458,14 @@ void ANelia::ShiftKeyUp()
 
 void ANelia::Attack()
 {
-	if (!bAttacking) //&& MovementStatus != EMovementStatus::EMS_Death)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death)
 	{
 		bAttacking = true;
 		SetInterpToEnemy(true);
 
 		if (MainAnimInstance && CombatMontage)
 		{
-			int32 Section = combatCount;
+			int32 Section = AttackMotionCount;
 			switch (Section)
 			{
 			case 0:
@@ -474,10 +483,10 @@ void ANelia::Attack()
 				;
 			}
 		}
-		combatCount++;
-		if (combatCount > 2)
+		AttackMotionCount++;
+		if (AttackMotionCount > 2)
 		{
-			combatCount = 0;
+			AttackMotionCount = 0;
 		}
 	}
 }
@@ -540,7 +549,7 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
 			if (Enemy)
 			{
-			//	Enemy->bHasValidTarget = false;
+				Enemy->bHasValidTarget = false;
 			}
 		}
 	}
@@ -549,4 +558,61 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		Health -= DamageAmount;
 	}
 	return DamageAmount;
+}
+
+void ANelia::UpdateCombatTarget()
+{
+	TArray<AActor*> OverlappingActors;
+	GetOverlappingActors(OverlappingActors, EnemyFilter);
+
+	if (OverlappingActors.Num() == 0)
+	{
+		if (MainPlayerController)
+		{
+			MainPlayerController->RemoveEnemyHealthBar();
+		}
+		return;
+	}
+
+	AEnemy* ClosetEnemy = Cast<AEnemy>(OverlappingActors[0]);
+	if (ClosetEnemy)
+	{
+		FVector Location = GetActorLocation();
+		float MinDistance = (ClosetEnemy->GetActorLocation() - Location).Size();
+
+		for (auto Actor : OverlappingActors)
+		{
+			AEnemy* Enemy = Cast<AEnemy>(Actor);
+			if (Enemy)
+			{
+				float DistanceToActor = (Enemy->GetActorLocation() - Location).Size();
+				if (DistanceToActor < MinDistance)
+				{
+					MinDistance = DistanceToActor;
+					ClosetEnemy = Enemy;
+				}
+			}
+		}
+		if (MainPlayerController)
+		{
+			MainPlayerController->DisplayEnemyHealthBar();
+		}
+		SetCombatTarget(ClosetEnemy);
+		bHasCombatTarget = true;
+	}
+}
+
+void ANelia::SwitchLevel(FName LevelName)
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		FString CurrentLevel = World->GetMapName();
+
+		FName CurrentLevelName(*CurrentLevel);
+		if (CurrentLevelName != LevelName)
+		{
+			UGameplayStatics::OpenLevel(World, LevelName);
+		}
+	}
 }
