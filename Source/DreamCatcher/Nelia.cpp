@@ -463,22 +463,24 @@ void ANelia::Attack()
 		bAttacking = true;
 		SetInterpToEnemy(true);
 
-		if (MainAnimInstance && CombatMontage)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && CombatMontage)
 		{
+
 			int32 Section = AttackMotionCount;
 			switch (Section)
 			{
 			case 0:
-				MainAnimInstance->Montage_Play(CombatMontage, 2.4f);
-				MainAnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 2.4f);
+				AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
 				break;
 			case 1:
-				MainAnimInstance->Montage_Play(CombatMontage, 2.3f);
-				MainAnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 2.3f);
+				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				MainAnimInstance->Montage_Play(CombatMontage, 1.5f);
-				MainAnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 1.5f);
+				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 			default:
 				;
 			}
