@@ -298,11 +298,15 @@ void AEnemy::Attack()
 					AnimInstance->Montage_Play(CombatMontage, 1.f);
 					AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
 					break;
+				case 2:
+					AnimInstance->Montage_Play(CombatMontage, 2.f);
+					AnimInstance->Montage_JumpToSection(FName("JumpAttack"), CombatMontage);
+					break;
 				default:
 					;
 				}
 				EnemyAttackCount++;
-				if (EnemyAttackCount > 1)
+				if (EnemyAttackCount > 2)
 				{
 					EnemyAttackCount = 0;
 				}
