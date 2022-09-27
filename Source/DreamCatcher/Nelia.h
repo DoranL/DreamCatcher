@@ -212,22 +212,18 @@ public:
 	
 	/// ////////////////////
 	UPROPERTY(EditAnywhere)
-	class UAnimMontage* DashMontage;
-	
-	UPROPERTY(VisibleAnywhere)
-	float DashDistance = 3000.f;
+	class UAnimMontage* RollMontage;
 
-	UPROPERTY(VisibleAnywhere)
-	bool bDash = true;
-	void Dash();
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool bRoll;
+
+	void Roll();
+
+	UFUNCTION(BlueprintCallable)
+	void StopRoll();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool bJump;
-
-	//timer
-	FTimerHandle DashTimer;
-
-	void CanDash();
 
 	class UMainAnimInstance* MainAnimInstance;
 

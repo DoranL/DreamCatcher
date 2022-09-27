@@ -96,6 +96,8 @@ ANelia::ANelia()
 	bMovingRight = false;
 
 	bHasCombatTarget = false;
+
+	bRoll = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -131,18 +133,6 @@ void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	/*if (MainAnimInstance->bIsInAir)
-	{
-		DashDistance = 50.f;
-		UE_LOG(LogTemp, Warning, TEXT("50"));
-
-	}
-	else
-	{
-		DashDistance = 3000.f;
-		UE_LOG(LogTemp, Warning, TEXT("3000"));
-
-	}*/
 
 	if (MovementStatus == EMovementStatus::EMS_Death) return;
 
@@ -304,7 +294,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ANelia::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ANelia::ShiftKeyUp);
 
-	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ANelia::Dash);
+	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &ANelia::Roll);
 
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
 	PlayerInputComponent->BindAction("Pickup", IE_Released, this, &ANelia::PickupReleas);
@@ -502,29 +492,45 @@ void ANelia::AttackEnd()
 		Attack();
 	}
 }
-////////
-void ANelia::Dash()
+
+void ANelia::Roll()
 {
-	const FVector ForwardDir = this->GetActorRotation().Vector();
-
-
-	if (DashMontage && bDash)
+	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death)
 	{
-		//LaunchCharacter(ForwardDir * DashDistance, true, true);
-		//PlayAnimMontage(DashMontage);
+		bRoll = true;
 
-		MainAnimInstance->Montage_Play(CombatMontage);
-		MainAnimInstance->Montage_JumpToSection(FName("roll"), CombatMontage);
-		bDash = false;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		UE_LOG(LogTemp, Warning, TEXT("getAnim"));
 
-		GetWorldTimerManager().SetTimer(DashTimer, this, &ANelia::CanDash, 2.f);
+		if (RollMontage && AnimInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Roll"));
+
+			AnimInstance->Montage_Play(RollMontage, 2.2f);
+			AnimInstance->Montage_JumpToSection(FName("Roll"), RollMontage);
+		}
 	}
 }
 
-void ANelia::CanDash()
+void ANelia::StopRoll()
 {
-	bDash = true;
-	GetWorldTimerManager().ClearTimer(DashTimer);
+	bRoll = false;
+
+	const FRotator Rotation = Controller->GetControlRotation();
+	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
+
+	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+	//AddMovementInput(Direction, 1000.f);
+
+	FVector StopLocation = GetActorLocation() + FVector(10.f, 0.f, 0.f);
+	
+
+	UE_LOG(LogTemp, Log, TEXT("Actor location: %s"), *GetActorLocation().ToString());
+
+	UE_LOG(LogTemp, Log, TEXT("Stop location: %s"), *StopLocation.ToString());
+
+	//SetActorLocation(StopLocation);
 }
 
 void ANelia::PlaySwingSound()
