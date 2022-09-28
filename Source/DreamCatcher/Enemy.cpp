@@ -291,7 +291,7 @@ void AEnemy::Attack()
 				switch (Section)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 0.5f);
+					AnimInstance->Montage_Play(CombatMontage, 1.3f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
@@ -299,7 +299,7 @@ void AEnemy::Attack()
 					AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
 					break;
 				case 2:
-					AnimInstance->Montage_Play(CombatMontage, 2.f);
+					AnimInstance->Montage_Play(CombatMontage, 1.7f);
 					AnimInstance->Montage_JumpToSection(FName("JumpAttack"), CombatMontage);
 					break;
 				default:

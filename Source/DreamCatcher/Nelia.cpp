@@ -19,6 +19,8 @@
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "MainPlayerController.h"
+#include "NeliaSaveGame.h"
+
 // Sets default values
 ANelia::ANelia()
 {
@@ -495,18 +497,15 @@ void ANelia::AttackEnd()
 
 void ANelia::Roll()
 {
-	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death)
+	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death && (bMovingForward || bMovingRight))
 	{
 		bRoll = true;
 
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		UE_LOG(LogTemp, Warning, TEXT("getAnim"));
 
 		if (RollMontage && AnimInstance)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Roll"));
-
-			AnimInstance->Montage_Play(RollMontage, 2.2f);
+			AnimInstance->Montage_Play(RollMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("Roll"), RollMontage);
 		}
 	}
@@ -515,22 +514,6 @@ void ANelia::Roll()
 void ANelia::StopRoll()
 {
 	bRoll = false;
-
-	const FRotator Rotation = Controller->GetControlRotation();
-	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-
-	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-	//AddMovementInput(Direction, 1000.f);
-
-	FVector StopLocation = GetActorLocation() + FVector(10.f, 0.f, 0.f);
-	
-
-	UE_LOG(LogTemp, Log, TEXT("Actor location: %s"), *GetActorLocation().ToString());
-
-	UE_LOG(LogTemp, Log, TEXT("Stop location: %s"), *StopLocation.ToString());
-
-	//SetActorLocation(StopLocation);
 }
 
 void ANelia::PlaySwingSound()
@@ -622,5 +605,38 @@ void ANelia::SwitchLevel(FName LevelName)
 		{
 			UGameplayStatics::OpenLevel(World, LevelName);
 		}
+	}
+}
+
+void ANelia::SaveGame()
+{
+	UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	
+	SaveGameInstance->CharacterStats.Health = Health;
+	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+	SaveGameInstance->CharacterStats.Stamina = Stamina;
+	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.Location = GetActorLocation();
+	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex); 
+
+}
+
+void ANelia::LoadGame(bool SetPosition)
+{
+	UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+
+	LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+
+	Health = LoadGameInstance->CharacterStats.Health;
+	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+	Stamina = LoadGameInstance->CharacterStats.Stamina;
+	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+
+	if (SetPosition)
+	{
+		SetActorLocation(LoadGameInstance->CharacterStats.Location);
+		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 	}
 }
