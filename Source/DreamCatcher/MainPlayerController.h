@@ -29,11 +29,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WPauseMenu;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget PauseMenu;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* PauseMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* EnemyHealthBar;
+
+	bool bPauseMenuVisible;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category ="HUD")
+	void DisplayPauseMenu();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemovePauseMenu();
+
+	void TogglePauseMenu();
 
 	bool bEnemyHealthBarVisible;
 
@@ -41,6 +51,8 @@ public:
 	void RemoveEnemyHealthBar();
 
 	FVector EnemyLocation;
+
+	void GameModeOnly();
 
 protected:
 	virtual void BeginPlay() override;

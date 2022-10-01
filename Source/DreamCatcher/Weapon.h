@@ -17,6 +17,9 @@ class DREAMCATCHER_API AWeapon : public AItem
 public:
 	AWeapon();
 
+	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
+	FString Name;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	bool bWeaponParticles;
 

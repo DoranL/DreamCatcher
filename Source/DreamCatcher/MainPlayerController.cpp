@@ -26,6 +26,16 @@ void AMainPlayerController::BeginPlay()
 		FVector2D Alignment(0.f, 0.f);
 		EnemyHealthBar->SetAlignmentInViewport(Alignment);
 	}
+
+	if (WPauseMenu)
+	{
+		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
+		if (PauseMenu)
+		{
+			PauseMenu->AddToViewport();
+			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
 }
 
 void AMainPlayerController::DisplayEnemyHealthBar()
@@ -56,10 +66,57 @@ void AMainPlayerController::Tick(float DeltaTime)
 		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
 		PositionInViewport.Y -= 160.f;
 		PositionInViewport.X -= 60.f;
-		//체력 바 길이
+
 		FVector2D SizeInViewport = FVector2D(250.f, 25.f);
 
 		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
 		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);
 	}
+}
+
+void AMainPlayerController::DisplayPauseMenu_Implementation()
+{
+	if (PauseMenu)
+	{
+		bPauseMenuVisible = true;
+		PauseMenu->SetVisibility(ESlateVisibility::Visible);
+
+		FInputModeGameAndUI InputModeGameAndUI;
+
+		SetInputMode(InputModeGameAndUI);
+		bShowMouseCursor = true;
+	}
+}
+
+void AMainPlayerController::RemovePauseMenu_Implementation()
+{
+	if (PauseMenu)
+	{
+		GameModeOnly();
+
+		bShowMouseCursor = false;
+
+		bPauseMenuVisible = false;
+	}
+}
+
+//ESC키 입력시 메뉴창이 띄어져 있으면 제거하고 없을 시 보이게 함
+void AMainPlayerController::TogglePauseMenu()
+{
+	if (bPauseMenuVisible)
+	{
+		RemovePauseMenu();
+	}
+	else
+	{
+		DisplayPauseMenu();
+	}
+}
+
+void AMainPlayerController::GameModeOnly()
+{
+
+	FInputModeGameOnly InputModeGameOnly;
+
+	SetInputMode(InputModeGameOnly);
 }

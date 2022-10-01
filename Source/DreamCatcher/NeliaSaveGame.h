@@ -27,7 +27,13 @@ struct FCharacterStats
 	FVector Location;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
-		FRotator Rotation;
+	FRotator Rotation;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	FString WeaponName;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	FString LevelName;
 };
 UCLASS()
 class DREAMCATCHER_API UNeliaSaveGame : public USaveGame

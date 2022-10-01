@@ -36,6 +36,9 @@ public:
 	// Sets default values for this character's properties
 	ANelia();
 
+	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
+	TSubclassOf<class AItemStorage> WeaponStorage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bHasCombatTarget;
 
@@ -89,7 +92,7 @@ public:
 	void SetMovementStatus(EMovementStatus Status);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
-	float RunningSpeed;
+	float Speed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
 	float SprintingSpeed;
@@ -164,8 +167,16 @@ public:
 	/** called for side to side input*/
 	void MoveRight(float Value);
 
+	/** called for Yaw rotation*/
+	void Turn(float Value);
+
+	/** called for Pitch rotation*/
+	void LookUp(float Value);
+
 	bool bMovingForward;
 	bool bMovingRight;
+
+	bool CanMove(float Value);
 
 	/** Called via input to turn at a given rate
 	* @parm Rate This is a normalized rate, i.e 1.0 means 100% of desired turn rate
@@ -180,6 +191,10 @@ public:
 	bool bPickup;
 	void PickupPress();
 	void PickupReleas();
+
+	bool bESCDown;
+	void ESCDown();
+	void ESCUp();
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
@@ -240,9 +255,13 @@ public:
 
 	void SwitchLevel(FName LevelName);
 
+	
+
 	UFUNCTION(BlueprintCallable)
 	void SaveGame();
 
 	UFUNCTION(BlueprintCallable)
 	void LoadGame(bool SetPosition);
+
+	void LoadGameNoSwitch();
 };

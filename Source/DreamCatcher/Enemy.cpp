@@ -208,13 +208,6 @@ void AEnemy::MoveToTarget(ANelia* Target)
 
 		AIController->MoveTo(MoveRequest, &NavPath);
 
-		/*auto PathPoints = NavPath->GetPathPoints();
-		for (auto Point : PathPoints)
-		{
-			FVector Location = Point.Location;
-
-			UKismetSystemLibrary::DrawDebugSphere(this, Location, 25.f, 8, FLinearColor::Red, 10.f, 1.5f);
-		}*/
 	}
 }
 
