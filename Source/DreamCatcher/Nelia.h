@@ -264,4 +264,6 @@ public:
 	void LoadGame(bool SetPosition);
 
 	void LoadGameNoSwitch();
+
+	FRotator NeliaRotation;
 };

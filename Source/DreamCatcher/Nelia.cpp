@@ -505,6 +505,8 @@ void ANelia::Attack()
 		bAttacking = true;
 		SetInterpToEnemy(true);
 
+		NeliaRotation = GetActorRotation();
+		
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage)
 		{
@@ -520,10 +522,11 @@ void ANelia::Attack()
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.5f);
-				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 0.5f);
+				AnimInstance->Montage_JumpToSection(FName("SpinAttack1"), CombatMontage);
+				break;
 			default:
-				;
+				break;
 			}
 		}
 		AttackMotionCount++;
@@ -538,6 +541,8 @@ void ANelia::AttackEnd()
 {
 	bAttacking = false;
 	SetInterpToEnemy(false);
+	SetActorRotation(NeliaRotation);
+
 	if (bPickup)
 	{
 		Attack();
