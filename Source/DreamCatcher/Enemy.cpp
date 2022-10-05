@@ -16,6 +16,7 @@
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
 #include "MainPlayerController.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -57,6 +58,9 @@ AEnemy::AEnemy()
 	DeathDelay = 3.f;
 
 	bHasValidTarget = false;
+
+	InterpSpeed = 15.f;
+	bInterpToNelia = false;
 }
 
 // Called when the game starts or when spawned
@@ -103,6 +107,36 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bInterpToNelia && CombatTarget)
+	{
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+
+		SetActorRotation(InterpRotation);
+	}
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	if (CombatTarget)
+	{
+		CombatTargetLocation = CombatTarget->GetActorLocation();
+		if (AIController)
+		{
+			NeliaLocation = CombatTargetLocation;
+		}
+	}
+}
+
+FRotator AEnemy::GetLookAtRotationYaw(FVector Target)
+{
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+	FRotator LookAtRotationYaw(0.f, LookAtRotation.Yaw, 0.f);
+	return LookAtRotationYaw;
+}
+
+void AEnemy::SetInterpToNelia(bool Interp)
+{
+	bInterpToNelia = Interp;
 }
 
 // Called to bind functionality to input
@@ -297,6 +331,8 @@ void AEnemy::Attack()
 		if (!bAttacking)
 		{
 			bAttacking = true;
+			SetInterpToNelia(true);
+
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 			if (AnimInstance)
 			{
@@ -332,6 +368,7 @@ void AEnemy::Attack()
 void AEnemy::AttackEnd()
 {
 	bAttacking = false;
+	SetInterpToNelia(false);
 	if (bOverlappingCombatSphere)
 	{
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);

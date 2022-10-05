@@ -90,8 +90,18 @@ public:
 	FTimerHandle DeathTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		float DeathDelay;
+	float DeathDelay;
 
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
+	FVector CombatTargetLocation;
+
+	float InterpSpeed;
+	bool bInterpToNelia;
+	void SetInterpToNelia(bool Interp);
+
+	FVector NeliaLocation;
+
+	FRotator GetLookAtRotationYaw(FVector Target);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
