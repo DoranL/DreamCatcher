@@ -520,7 +520,7 @@ void ANelia::Attack()
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.f);
+				AnimInstance->Montage_Play(CombatMontage, 2.f);
 				AnimInstance->Montage_JumpToSection(FName("Spear"), CombatMontage);
 				break;
 			case 3:
