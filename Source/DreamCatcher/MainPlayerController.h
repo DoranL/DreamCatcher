@@ -54,6 +54,9 @@ public:
 
 	void GameModeOnly();
 
+	//스킬 사용
+	int CheckInputKey();
+
 protected:
 	virtual void BeginPlay() override;
 

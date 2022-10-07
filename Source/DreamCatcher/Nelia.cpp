@@ -21,6 +21,7 @@
 #include "MainPlayerController.h"
 #include "NeliaSaveGame.h"
 #include "ItemStorage.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -65,8 +66,8 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Speed = 650.f;
-	SprintingSpeed = 950.f;
+	Speed = 280.f;
+	SprintingSpeed = 375.f;
 
 	bShiftKeyDown = false;
 	bPickup = false;
@@ -472,7 +473,7 @@ void ANelia::DeathEnd()
 	GetMesh()->bNoSkeletonUpdate = true;
 }
 
-//위 Switch문에서 EMS_Sprinting 상태일 때는 속도를 SprintingSpeed=950.f로 값을 주고 그 외에는 Speed인 650.f
+//위 Switch문에서 EMS_Sprinting 상태일 때는 속도를 SprintingSpeed=375.f로 값을 주고 그 외에는 Speed인 280.f
 void ANelia::SetMovementStatus(EMovementStatus Status)
 {
 	MovementStatus = Status;
@@ -504,8 +505,11 @@ void ANelia::Attack()
 	{
 		bAttacking = true;
 		SetInterpToEnemy(true);
-		
+
+		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
+		int pressSkillNum = MainPlayerController->CheckInputKey();
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
 		if (AnimInstance && CombatMontage)
 		{
 			int32 Section = AttackMotionCount;
@@ -526,11 +530,26 @@ void ANelia::Attack()
 			case 3:
 				AnimInstance->Montage_Play(CombatMontage, 1.3f);
 				AnimInstance->Montage_JumpToSection(FName("MagicAttack"), CombatMontage);
+				break; 
+			default:
 				break;
+			}
+
+			/////////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
+			switch (pressSkillNum)
+			{
+			case1:
+				break;
+			case2:
+				break;
+			case3:
+				break;
+
 			default:
 				break;
 			}
 		}
+		
 		AttackMotionCount++;
 		if (AttackMotionCount > 3)
 		{
