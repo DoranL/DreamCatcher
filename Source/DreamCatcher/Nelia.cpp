@@ -501,7 +501,7 @@ void ANelia::ShiftKeyUp()
 //case0부터 2까지 순서대로 시행하고 마지막 Attack3를 시행 후 다시 Attack1번부터 공격 모션을 수행함
 void ANelia::Attack()
 {
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon)
 	{
 		bAttacking = true;
 		SetInterpToEnemy(true);
@@ -539,6 +539,7 @@ void ANelia::Attack()
 			switch (pressSkillNum)
 			{
 			case1:
+
 				break;
 			case2:
 				break;
