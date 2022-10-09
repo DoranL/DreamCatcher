@@ -126,15 +126,15 @@ int AMainPlayerController::CheckInputKey()
 	int checkPressKey;
 	if (this->WasInputKeyJustPressed(EKeys::One) || (this->WasInputKeyJustPressed(EKeys::NumPadOne)))
 	{
-		int checkPressKey = 1;
+		checkPressKey = 1;
 	}
 	if (this->WasInputKeyJustPressed(EKeys::Two) || (this->WasInputKeyJustPressed(EKeys::NumPadTwo)))
 	{
-		int checkPressKey = 2;
+		checkPressKey = 2;
 	}
 	if (this->WasInputKeyJustPressed(EKeys::Three) || (this->WasInputKeyJustPressed(EKeys::NumPadThree)))
 	{
-		int checkPressKey = 3;
+		checkPressKey = 3;
 	}
 	
 	return checkPressKey;

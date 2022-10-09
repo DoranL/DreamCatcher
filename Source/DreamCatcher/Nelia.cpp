@@ -536,10 +536,11 @@ void ANelia::Attack()
 			}
 
 			/////////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
+			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
 			switch (pressSkillNum)
 			{
 			case1:
-
+				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
 				break;
 			case2:
 				break;
