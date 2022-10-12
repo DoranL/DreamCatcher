@@ -224,7 +224,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
 
-	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* SkillMontage;
+
 	/// ////////////////////
 	UPROPERTY(EditAnywhere)
 	class UAnimMontage* RollMontage;

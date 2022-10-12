@@ -524,27 +524,29 @@ void ANelia::Attack()
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 2.f);
-				AnimInstance->Montage_JumpToSection(FName("Spear"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 0.9f);
+				AnimInstance->Montage_JumpToSection(FName("Spear1"), CombatMontage);
 				break;
-			case 3:
-				AnimInstance->Montage_Play(CombatMontage, 1.3f);
-				AnimInstance->Montage_JumpToSection(FName("MagicAttack"), CombatMontage);
-				break; 
 			default:
 				break;
 			}
 
-			/////////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
-			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
+			///////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
+			UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
 			switch (pressSkillNum)
 			{
-			case1:
-				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+			case 1:
+				BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+
+				AnimInstance->Montage_Play(SkillMontage, 1.4f);
+				AnimInstance->Montage_JumpToSection(FName("Skill4"), SkillMontage);
+
+				UE_LOG(LogTemp, Warning, TEXT("skill1"));
+
 				break;
-			case2:
+			case 2:
 				break;
-			case3:
+			case 3:
 				break;
 
 			default:
@@ -553,7 +555,7 @@ void ANelia::Attack()
 		}
 		
 		AttackMotionCount++;
-		if (AttackMotionCount > 3)
+		if (AttackMotionCount > 2)
 		{
 			AttackMotionCount = 0;
 		}
