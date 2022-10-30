@@ -29,11 +29,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WPauseMenu;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WDiedHUD;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* PauseMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* EnemyHealthBar;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* DiedHUD;
 
 	bool bPauseMenuVisible;
 
@@ -56,6 +62,9 @@ public:
 
 	//스킬 사용
 	int CheckInputKey();
+
+	//스킬 버튼을 누르고 있는 시간을 체크
+	//int CheckInputKeyTime();
 
 protected:
 	virtual void BeginPlay() override;

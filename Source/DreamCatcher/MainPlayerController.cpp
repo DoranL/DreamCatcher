@@ -27,6 +27,16 @@ void AMainPlayerController::BeginPlay()
 		EnemyHealthBar->SetAlignmentInViewport(Alignment);
 	}
 
+	if (WDiedHUD)
+	{
+		DiedHUD = CreateWidget<UUserWidget>(this, WDiedHUD);
+		if (DiedHUD)
+		{
+			DiedHUD->AddToViewport();
+			DiedHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
 	if (WPauseMenu)
 	{
 		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
@@ -55,6 +65,7 @@ void AMainPlayerController::RemoveEnemyHealthBar()
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
+
 
 void AMainPlayerController::Tick(float DeltaTime)
 {
@@ -139,3 +150,8 @@ int AMainPlayerController::CheckInputKey()
 	
 	return checkPressKey;
 }
+
+//int AMainPlayerController::CheckInputKeyTime()
+//{
+//
+//}

@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "DreamCatcherGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DREAMCATCHER_API ADreamCatcherGameModeBase : public AGameModeBase
+class DREAMCATCHER_API ADreamCatcherGameModeBase : public AGameMode
 {
 	GENERATED_BODY()
 	

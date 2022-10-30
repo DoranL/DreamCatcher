@@ -214,6 +214,15 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bAttacking;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool saveAttack;
+
+	UFUNCTION(BlueprintCallable)
+	void ResetCombo();
+
+	UFUNCTION(BlueprintCallable)
+	void SaveComboAttack();
+
 	int AttackMotionCount = 0;
 
 	void Attack();
@@ -268,4 +277,12 @@ public:
 	void LoadGameNoSwitch();
 
 	FRotator NeliaRotation;
+
+
+
+	/// <summary>
+	/// ///////////////
+	/// </summary>
+	UFUNCTION(BlueprintCallable)
+	void OnDeath();
 };

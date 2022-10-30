@@ -22,6 +22,11 @@
 #include "NeliaSaveGame.h"
 #include "ItemStorage.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/GameModeBase.h"
+#include "Blueprint/UserWidget.h"
+#include "DreamCatcherGameModeBase.h"
+#include "GameFramework/GameMode.h"
+
 
 // Sets default values
 ANelia::ANelia()
@@ -66,8 +71,8 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Speed = 280.f;
-	SprintingSpeed = 375.f;
+	Speed = 300.f;
+	SprintingSpeed = 500.f;
 
 	bShiftKeyDown = false;
 	bPickup = false;
@@ -115,7 +120,7 @@ void ANelia::Jump()
 {
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
 
-	if (MovementStatus != EMovementStatus::EMS_Death)
+	if ((MovementStatus != EMovementStatus::EMS_Death))
 	{
 		Super::Jump();
 		bJump = true;
@@ -387,7 +392,7 @@ void ANelia::PickupPress()
 
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
 
-	if (ActiveOverlappingItem)
+	if (ActiveOverlappingItem && !bAttacking)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon)
@@ -398,7 +403,14 @@ void ANelia::PickupPress()
 	}
 	else if (EquippedWeapon)
 	{
-		Attack();
+		if (bAttacking)
+		{
+			saveAttack = true;
+		}
+		else
+		{
+			Attack();
+		}
 	}
 }
 
@@ -454,16 +466,19 @@ void ANelia::DecrementHealth(float Amount)
 //CombatMontage를 1.2배 속도로 애니메이션을 실행하고 CombatMontage의 몽타주 섹션 Death 부분으로 이동
 void ANelia::Die()
 {
-	if (MovementStatus == EMovementStatus::EMS_Death) return;
-
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
 	if (MovementStatus == EMovementStatus::EMS_Death) return;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	//MainPlayerController->startplayer ///////////////////// 이거 character spawn 하려고 하던건데 음 startplayer을 어떻게 받아야 할지 모르겠음
 	if (AnimInstance && CombatMontage)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.2f);
 		AnimInstance->Montage_JumpToSection(FName("Death"));
+		
 	}
 	SetMovementStatus(EMovementStatus::EMS_Death);
+	OnDeath();
 }
 
 //죽으면 애니메이션을 멈추고 스켈레톤 업데이트도 멈춘다.
@@ -516,16 +531,16 @@ void ANelia::Attack()
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 1.4f);
+				AnimInstance->Montage_Play(CombatMontage, 1.7f);
 				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.3f);
+				AnimInstance->Montage_Play(CombatMontage, 1.7f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 0.9f);
-				AnimInstance->Montage_JumpToSection(FName("Spear1"), CombatMontage);
+				AnimInstance->Montage_Play(CombatMontage, 1.1f);
+				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 				break;
 			default:
 				break;
@@ -573,10 +588,29 @@ void ANelia::AttackEnd()
 	}
 }
 
+void ANelia::ResetCombo()
+{
+	AttackMotionCount = 0;
+	saveAttack = false;
+	bAttacking = false;
+	UE_LOG(LogTemp, Warning, TEXT("reset"));
+}
+
+void ANelia::SaveComboAttack()
+{
+	if (saveAttack)
+	{
+		saveAttack = false;
+		AttackEnd();
+		Attack();
+		UE_LOG(LogTemp, Warning, TEXT("savecombo"));
+	}
+}
+
 //구르고 있지 않고 죽지 않았고 W,S 또는 A,D키를 누르고 있을 때 Nelia의 AnimInstance를 가져오고 RollMontage를 1.5배 속도로 실행한다.
 void ANelia::Roll()
 {
-	if (!bRoll && !bJump && MovementStatus != EMovementStatus::EMS_Death && (bMovingForward || bMovingRight))
+	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death && (bMovingForward || bMovingRight))
 	{
 		bRoll = true;
 
@@ -586,6 +620,15 @@ void ANelia::Roll()
 		{
 			AnimInstance->Montage_Play(RollMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("Roll"), RollMontage);
+
+			FTimerHandle WaitHandle;
+			
+			GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+				{
+
+					// 여기에 코드를 치면 된다.
+
+				}), 5.f, false);
 		}
 	}
 }
@@ -633,6 +676,24 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 	return DamageAmount;
 }
+
+void ANelia::OnDeath()
+{
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
+	MainPlayerController->UnPossess();
+	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);//StartCameraFade(0.f, 0.f, 1.f, FLinearColor::Black, false, true);
+	playerCamera->StartCameraFade(0.f, 1.f, 3.f, FLinearColor::Black, false, true);
+	FTimerHandle WaitHandle;
+	MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Visible);
+
+	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+	{
+			MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Hidden);
+			AGameMode* GameMode = Cast<AGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+			GameMode->RestartGame();
+	}), 3.1f, false);
+}
+
 
 //OverlappingActors라는 배열(순서대로 나열되는)을 만들고 배열에 아무것도 없고 MainPlayerController이면 적 체력바를 안 보이도록 한다.
 void ANelia::UpdateCombatTarget()
