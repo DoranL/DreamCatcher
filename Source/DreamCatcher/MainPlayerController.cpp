@@ -3,6 +3,22 @@
 
 #include "MainPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Nelia.h"
+
+#include "UserInterface.h"
+#include "UObject/ConstructorHelpers.h"
+
+
+AMainPlayerController::AMainPlayerController()
+{
+	static ConstructorHelpers::FClassFinder<UUserWidget> UserInterfaceBpClass(TEXT("/Game/HUD/DialogueWidget"));
+
+		if (UserInterfaceBpClass.Class != nullptr)
+		{
+			UserInterfaceClass = UserInterfaceBpClass.Class;
+		}
+}
+
 
 void AMainPlayerController::BeginPlay()
 {

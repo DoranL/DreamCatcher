@@ -70,4 +70,13 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
+
+protected:
+	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
+	class UUserInterface* UserInterface;
+
+	TSubclassOf<class UUserWidget> UserInterfaceClass;
+
+public:
+	FORCEINLINE UUserInterface* GetUI() { return UserInterface; };
 };
