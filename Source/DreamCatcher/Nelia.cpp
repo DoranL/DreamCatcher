@@ -26,7 +26,7 @@
 #include "Blueprint/UserWidget.h"
 #include "DreamCatcherGameModeBase.h"
 #include "GameFramework/GameMode.h"
-
+#include "UserInterface.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -305,6 +305,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("LookUp", this, &ANelia::LookUp);
 	PlayerInputComponent->BindAxis("TurnRate", this, &ANelia::TurnAtRate);
 	PlayerInputComponent->BindAxis("LokkUpRate", this, &ANelia::LookUpAtRate);
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ANelia::Interact);
 }
 
 bool ANelia::CanMove(float Value)
@@ -848,4 +850,13 @@ void ANelia::LoadGameNoSwitch()
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
+}
+
+void ANelia::Interact()
+{
+	
+	if (MainPlayerController->UserInterface != nullptr)
+	{
+		MainPlayerController->UserInterface->Interact();
+	}
 }

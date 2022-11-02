@@ -278,11 +278,11 @@ public:
 
 	FRotator NeliaRotation;
 
-
-
-	/// <summary>
-	/// ///////////////
-	/// </summary>
 	UFUNCTION(BlueprintCallable)
 	void OnDeath();
+
+	UFUNCTION(BlueprintCallable, Category = "Inputs")
+	void Interact();
+
+
 };

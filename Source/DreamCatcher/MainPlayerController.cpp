@@ -8,21 +8,36 @@
 #include "UserInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
-
 AMainPlayerController::AMainPlayerController()
 {
 	static ConstructorHelpers::FClassFinder<UUserWidget> UserInterfaceBpClass(TEXT("/Game/HUD/DialogueWidget"));
 
-		if (UserInterfaceBpClass.Class != nullptr)
-		{
-			UserInterfaceClass = UserInterfaceBpClass.Class;
-		}
+	if (UserInterfaceBpClass.Class != nullptr)
+	{
+		UserInterfaceClass = UserInterfaceBpClass.Class;
+	}
 }
 
 
 void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+		if (UserInterfaceClass != nullptr)
+		{
+			UserInterface = CreateWidget<UUserInterface>(this, UserInterfaceClass);
+		}
+
+	if (UserInterface != nullptr)
+	{
+		UserInterface->AddToViewport();
+
+		if (IntroDialogue != nullptr)
+		{
+			SetCinematicMode(true, true, true);
+			UserInterface->InitializeDialogue(IntroDialogue);
+		}
+	} 
 
 	if (HUDOverlayAsset)
 	{
@@ -150,7 +165,7 @@ void AMainPlayerController::GameModeOnly()
 
 int AMainPlayerController::CheckInputKey()
 {
-	int checkPressKey;
+	int checkPressKey = 0;
 	if (this->WasInputKeyJustPressed(EKeys::One) || (this->WasInputKeyJustPressed(EKeys::NumPadOne)))
 	{
 		checkPressKey = 1;

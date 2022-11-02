@@ -14,7 +14,18 @@ class DREAMCATCHER_API AMainPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+
 public:
+	AMainPlayerController();
+
+	//UFUNCTION(BlueprintCallable, Category = "Input")
+	//void LookInput();
+
+	//UFUNCTION(BlueprintCallable, Category = "Input")
+	//void UnLockInput();
+
+public:
+
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
@@ -71,7 +82,7 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-protected:
+public:
 	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
 	class UUserInterface* UserInterface;
 
@@ -79,4 +90,8 @@ protected:
 
 public:
 	FORCEINLINE UUserInterface* GetUI() { return UserInterface; };
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue")
+	class UDataTable* IntroDialogue;
 };
