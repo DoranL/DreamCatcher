@@ -307,6 +307,10 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("LokkUpRate", this, &ANelia::LookUpAtRate);
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ANelia::Interact);
+
+	PlayerInputComponent->BindAction("keyUp", IE_Pressed, this, &ANelia::OnKeyUp);
+	PlayerInputComponent->BindAction("KeyDown", IE_Pressed, this, &ANelia::OnKeyDown);
+	//.bConsumeInput = false;
 }
 
 bool ANelia::CanMove(float Value)
@@ -853,10 +857,25 @@ void ANelia::LoadGameNoSwitch()
 }
 
 void ANelia::Interact()
-{
-	
+{	
 	if (MainPlayerController->UserInterface != nullptr)
 	{
 		MainPlayerController->UserInterface->Interact();
+	}
+}
+
+void ANelia::OnKeyUp()
+{
+	if (MainPlayerController->UserInterface != nullptr)
+	{
+		MainPlayerController->UserInterface->OnSelectUpOption();
+	}
+}
+
+void ANelia::OnKeyDown()
+{
+	if (MainPlayerController->UserInterface != nullptr)
+	{
+		MainPlayerController->UserInterface->OnSelectDownOption();
 	}
 }

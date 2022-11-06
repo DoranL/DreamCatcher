@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -60,6 +60,13 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void RemovePauseMenu();
 
+	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
+	class UUserInterface* UserInterface;
+
+	void DialogueEvents();
+
+	TSubclassOf<class UUserWidget> UserInterfaceClass;
+
 	void TogglePauseMenu();
 
 	bool bEnemyHealthBarVisible;
@@ -83,15 +90,11 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
-	class UUserInterface* UserInterface;
-
-	TSubclassOf<class UUserWidget> UserInterfaceClass;
-
-public:
 	FORCEINLINE UUserInterface* GetUI() { return UserInterface; };
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue")
 	class UDataTable* IntroDialogue;
+
+
 };

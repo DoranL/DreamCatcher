@@ -46,6 +46,8 @@ class DREAMCATCHER_API UUserInterface : public UUserWidget
 	GENERATED_BODY()
 
 protected:
+	virtual void BeginPlay() ;
+
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* PlayerDialogTextBlock;
 
@@ -80,6 +82,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Animation Evenets")
 	void OnSetOption(int32 Option, const FText& OptionText);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class AMainPlayerController* MainPlayerController;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class ANelia* Nelia;
+
 public:
 	void SetMessage(const FString& Text);
 
@@ -112,8 +120,8 @@ private:
 
 	int32 iLetter;
 
-private:
 	int32 CurrentState = 0;
+	
 	int32 SelectedOption;
 
 	TArray<FNPCDialogue*> Dialogue;

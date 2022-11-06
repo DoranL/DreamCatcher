@@ -284,5 +284,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inputs")
 	void Interact();
 
+	UFUNCTION(BlueprintCallable, Category = "Inputs")
+	void OnKeyUp();
 
+	UFUNCTION(BlueprintCallable, Category = "Inputs")
+	void OnKeyDown();
 };

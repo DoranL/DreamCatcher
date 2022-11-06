@@ -4,19 +4,30 @@
 #include "UserInterface.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "MainPlayerController.h"
+#include "Nelia.h"
 
+void UUserInterface::BeginPlay()
+{
+   
+}
+
+//해당 SetMessage와 SetCharacterName을 실직적으로 호출한 부분은 없음 
+//SetMessage는 대화창의 대화 블록이 비어있음 return을 하고 전달된 문자열을 FText형태로 대화 블록에 지정해줌
 void UUserInterface::SetMessage(const FString& Text)
 {
 	if (PlayerDialogTextBlock == nullptr)return;
 	PlayerDialogTextBlock->SetText(FText::FromString(Text));
 }
-
+ 
+//캐릭터 이름 기입칸이 비었을 경우 return 하고 위와 동일하게 전달받은 text 값을 FTEXT 형태로 지정해줌
 void UUserInterface::SetCharacterName(const FString& Text)
 {
 	if (CharacterNameText == nullptr) return;
 	CharacterNameText->SetText(FText::FromString(Text));
 }
 
+//월드 타이머를 초기화 해주고 대화창 RowIndex 번째 메세지를 보여지게 함?
 void UUserInterface::OnTimerCompleted()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -24,6 +35,10 @@ void UUserInterface::OnTimerCompleted()
 	AnimateMessage(Dialogue[RowIndex]->Messages[MessageIndex].ToString());
 }
 
+// CurrentState는 1 첫 번째 대화창 출력 InitialMessage = text 기존 적혀있던 Text를 새로 입력하는 Text로 덮어씀
+// OutputMessage는 뭐 문자를 출력한다 이런 거 같은데 .....................
+// iLetter은 글자를 한 글자씩 출력할 때 쓰는 int32형태의 변수 길이를 측정하고 초기 길이보다 짧으면 계속해서 입력받는 형식
+// 맨 마지막 줄이 한 글자 입력 시간을 조절하는 DelayBetweenLetters 값을주고 OnAnimationTimerCompleted가 값이 입력되는 애니메이션 실행동안인듯함 
 void UUserInterface::AnimateMessage(const FString& Text)
 {
 	CurrentState = 1;
@@ -39,9 +54,13 @@ void UUserInterface::AnimateMessage(const FString& Text)
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UUserInterface::OnAnimationTimerCompleted, DelayBetweenLetters, false);
 }
 
-
+//현재 대사를 표시하고 CurrentState = 2로 다음 if문으로 넘어가고 MessageIndex를 1추가한 값이 IntroDialogue 데이터 테이블에 메세지 개수보다 적으면 이 과정을 반복 
+//MessageIndex + 1 값이 메세지 개수보다 많아지게 되면 더이상 남은 대화 개수가 없다는 의미가 되고  else문으로 
 void UUserInterface::Interact()
 {
+    //시작할 때 MainPlayerController에 Nelia가 가지고 있는 컨트롤러를 AMainPlayerController 형태로 형변환 후 대입 
+    Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(this, 0));
+    MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
     if (CurrentState == 1) // The text is being animated, skip
     {
         GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -73,7 +92,9 @@ void UUserInterface::Interact()
                 }
 
                 SelectedOption = 0;
-
+                
+                
+                //마우스나 키보드로 현재 선택중인 옵션 선택하는 대화창에서 선택가능한 사항 있을 경우? 
                 OnHighLightOption(SelectedOption);
 
                 CurrentState = 3; // 플레이어 응답 기다림
@@ -97,6 +118,8 @@ void UUserInterface::Interact()
 
                 CurrentState = 0;
                 OnAnimationHideMessageUI();
+                MainPlayerController->SetCinematicMode(false, true, true);
+
             }
         }
     }
@@ -116,6 +139,7 @@ void UUserInterface::Interact()
         {
             CurrentState = 0;
             OnAnimationHideMessageUI();
+            MainPlayerController->SetCinematicMode(false, true, true);
         }
     }
 }
@@ -179,7 +203,7 @@ void UUserInterface::InitializeDialogue(class UDataTable* DialogueTable)
 	}
 }
 
-
+//대화창
 void UUserInterface::OnSelectUpOption()
 {
     if (CurrentState != 3)return;

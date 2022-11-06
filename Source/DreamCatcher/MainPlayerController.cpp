@@ -23,22 +23,6 @@ void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-		if (UserInterfaceClass != nullptr)
-		{
-			UserInterface = CreateWidget<UUserInterface>(this, UserInterfaceClass);
-		}
-
-	if (UserInterface != nullptr)
-	{
-		UserInterface->AddToViewport();
-
-		if (IntroDialogue != nullptr)
-		{
-			SetCinematicMode(true, true, true);
-			UserInterface->InitializeDialogue(IntroDialogue);
-		}
-	} 
-
 	if (HUDOverlayAsset)
 	{
 		HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
@@ -77,7 +61,31 @@ void AMainPlayerController::BeginPlay()
 			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
+
+	if (UserInterfaceClass != nullptr)
+	{
+		UserInterface = CreateWidget<UUserInterface>(this, UserInterfaceClass);
+	}	
+
+	if (UserInterface != nullptr)
+	{
+		UserInterface->AddToViewport();
+
+		if (IntroDialogue != nullptr)
+		{
+			SetCinematicMode(true, true, true);
+			UserInterface->InitializeDialogue(IntroDialogue);
+
+			
+		}
+	}
 }
+
+void AMainPlayerController::DialogueEvents()
+{
+
+}
+
 
 void AMainPlayerController::DisplayEnemyHealthBar()
 {
