@@ -25,7 +25,6 @@ public:
 	//void UnLockInput();
 
 public:
-
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
@@ -54,20 +53,34 @@ public:
 
 	bool bPauseMenuVisible;
 
+	bool bDialogueVisible;
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category ="HUD")
 	void DisplayPauseMenu();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void RemovePauseMenu();
 
+	void DisplayDialogue();
+
+	void RemoveDialogue();
+
 	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
 	class UUserInterface* UserInterface;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class ANelia* Nelia;
+
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class AMainPlayerController* MainPlayerController;*/
 
 	void DialogueEvents();
 
 	TSubclassOf<class UUserWidget> UserInterfaceClass;
 
 	void TogglePauseMenu();
+
+	void ToggleDialogue();
 
 	bool bEnemyHealthBarVisible;
 

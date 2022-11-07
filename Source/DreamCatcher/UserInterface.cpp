@@ -61,6 +61,7 @@ void UUserInterface::Interact()
     //시작할 때 MainPlayerController에 Nelia가 가지고 있는 컨트롤러를 AMainPlayerController 형태로 형변환 후 대입 
     Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(this, 0));
     MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
+
     if (CurrentState == 1) // The text is being animated, skip
     {
         GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -79,7 +80,7 @@ void UUserInterface::Interact()
         else // npc 대사 끝남
         {
             PlayerDialogTextBlock->SetText(FText::FromString(""));
-            CharacterNameText->SetText(FText::FromString("PALL AND PALLING"));
+            CharacterNameText->SetText(FText::FromString("Pelia"));
 
             if (Dialogue[RowIndex]->MessageOptions.Num() > 0) // 플레이어 응답 있으면
             {
@@ -89,6 +90,7 @@ void UUserInterface::Interact()
                 for (int i = 0; i < Dialogue[RowIndex]->MessageOptions.Num(); i++)
                 {
                     OnSetOption(i, Dialogue[RowIndex]->MessageOptions[i].OptionText); //응답 보이게 함
+                    UE_LOG(LogTemp, Warning, TEXT("for"));
                 }
 
                 SelectedOption = 0;
@@ -118,8 +120,7 @@ void UUserInterface::Interact()
 
                 CurrentState = 0;
                 OnAnimationHideMessageUI();
-                MainPlayerController->SetCinematicMode(false, true, true);
-
+                MainPlayerController->RemoveDialogue();
             }
         }
     }
@@ -139,7 +140,7 @@ void UUserInterface::Interact()
         {
             CurrentState = 0;
             OnAnimationHideMessageUI();
-            MainPlayerController->SetCinematicMode(false, true, true);
+            MainPlayerController->RemoveDialogue();
         }
     }
 }

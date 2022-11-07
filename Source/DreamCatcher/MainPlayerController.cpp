@@ -4,6 +4,7 @@
 #include "MainPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Nelia.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "UserInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -22,6 +23,7 @@ AMainPlayerController::AMainPlayerController()
 void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	bDialogueVisible = false;
 
 	if (HUDOverlayAsset)
 	{
@@ -61,22 +63,13 @@ void AMainPlayerController::BeginPlay()
 			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-
 	if (UserInterfaceClass != nullptr)
 	{
 		UserInterface = CreateWidget<UUserInterface>(this, UserInterfaceClass);
-	}	
-
-	if (UserInterface != nullptr)
-	{
-		UserInterface->AddToViewport();
-
-		if (IntroDialogue != nullptr)
+		if (UserInterface)
 		{
-			SetCinematicMode(true, true, true);
-			UserInterface->InitializeDialogue(IntroDialogue);
-
-			
+			UserInterface->AddToViewport();
+			UserInterface->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
@@ -162,6 +155,48 @@ void AMainPlayerController::TogglePauseMenu()
 		DisplayPauseMenu();
 	}
 }
+
+void AMainPlayerController::ToggleDialogue()
+{
+	if (bDialogueVisible)
+	{
+		UserInterface->Interact();
+	}
+	else
+	{
+		DisplayDialogue();
+	}
+}
+
+void AMainPlayerController::DisplayDialogue()
+{
+	if (UserInterface)
+	{
+		bDialogueVisible = true;
+		UserInterface->SetVisibility(ESlateVisibility::Visible);
+		SetCinematicMode(true, true, true);
+
+		FInputModeGameAndUI InputModeGameAndUI;
+
+		SetInputMode(InputModeGameAndUI);
+		bShowMouseCursor = true;
+		UserInterface->InitializeDialogue(IntroDialogue);
+	}
+}
+
+void AMainPlayerController::RemoveDialogue()
+{
+	if (UserInterface)
+	{
+		GameModeOnly();
+
+		bShowMouseCursor = false;
+
+		bDialogueVisible = false;
+		SetCinematicMode(false, true, true);
+	}
+}
+
 
 void AMainPlayerController::GameModeOnly()
 {

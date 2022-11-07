@@ -862,6 +862,7 @@ void ANelia::Interact()
 	{
 		MainPlayerController->UserInterface->Interact();
 	}
+	MainPlayerController->ToggleDialogue();
 }
 
 void ANelia::OnKeyUp()
