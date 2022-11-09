@@ -164,6 +164,9 @@ public:
 	/** called for forwards/backwards input*/
 	void MoveForward(float Value);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool isClimb;
+
 	/** called for side to side input*/
 	void MoveRight(float Value);
 

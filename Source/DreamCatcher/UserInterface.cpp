@@ -54,14 +54,15 @@ void UUserInterface::AnimateMessage(const FString& Text)
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UUserInterface::OnAnimationTimerCompleted, DelayBetweenLetters, false);
 }
 
-//현재 대사를 표시하고 CurrentState = 2로 다음 if문으로 넘어가고 MessageIndex를 1추가한 값이 IntroDialogue 데이터 테이블에 메세지 개수보다 적으면 이 과정을 반복 
-//MessageIndex + 1 값이 메세지 개수보다 많아지게 되면 더이상 남은 대화 개수가 없다는 의미가 되고  else문으로 
+
 void UUserInterface::Interact()
 {
-    //시작할 때 MainPlayerController에 Nelia가 가지고 있는 컨트롤러를 AMainPlayerController 형태로 형변환 후 대입 
+    //맵에서 0번째 캐릭터를 가져와서 nelia에 넣어주고 가져온 캐릭터의 컨트롤러를 형변환 후 MainPlayerController에 넣어줌
     Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(this, 0));
     MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
 
+    //CurrentState 값을 1로 바꿔주는 부분이 블루프린트에 있는 OnResetOption인감
+    //타이머를 해제하고 
     if (CurrentState == 1) // The text is being animated, skip
     {
         GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -77,8 +78,8 @@ void UUserInterface::Interact()
             
             AnimateMessage(Dialogue[RowIndex]->Messages[MessageIndex].ToString());
         }
-        else // npc 대사 끝남
-        {
+        else // npc 대사 끝남 
+        { 
             PlayerDialogTextBlock->SetText(FText::FromString(""));
             CharacterNameText->SetText(FText::FromString("Pelia"));
 
