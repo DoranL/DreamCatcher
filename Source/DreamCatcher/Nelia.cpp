@@ -357,22 +357,18 @@ void ANelia::MoveForward(float Value)
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
-
+		bMovingForward = true;
 		if (isClimb)
 		{
-			const FVector Direction_up = GetActorUpVector();
-			AddMovementInput(Direction_up, Value);
+			if (isClimbLedge)
+			{
+				const FVector Direction_up = GetActorUpVector();
+				AddMovementInput(Direction_up, Value);
+			}
 		}
-
-		if (!isClimb)
-		{
-			AddMovementInput(Direction, Value);
-		}
-
-		bMovingForward = true;
 	}
-	isClimb = false;
 }
+
 
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
