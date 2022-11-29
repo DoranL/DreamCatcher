@@ -1,6 +1,4 @@
  // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Nelia.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -11,7 +9,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Weapon.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Enemy.h"
@@ -27,6 +24,7 @@
 #include "DreamCatcherGameModeBase.h"
 #include "GameFramework/GameMode.h"
 #include "UserInterface.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 ANelia::ANelia()
@@ -97,6 +95,9 @@ ANelia::ANelia()
 	bHasCombatTarget = false;
 
 	bRoll = false;
+	TraceDistance = 45.f;
+
+	isClimb = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -114,8 +115,8 @@ void ANelia::BeginPlay()
 	//}
 }
  
-//부모 클래스에 있는 점프에 대한 정보를 변경하기에는 문제가 발생할 수 있으므로 헤더에서 점프를 override해서 다른 것은 부모의 점프를 상속 받고 bJump는 부모가 아닌 Nelia에 정의하여 사용하는 것
-//if(MovementStatus != EMovementStatus::EMS_Death)는 공격 받은 이후 죽었을 때도 점프가 가능한 상황을 막는 코드 
+//부모 클래스에 있는 점프에 대한 정보를 변경하기에는 문제가 발생할 수 있으므로 헤더에서 점프를 재정의해서 사용
+//죽은 상태가 아닐 경우 bool 변수에 true를 넣어줌
 void ANelia::Jump()
 {
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
@@ -127,7 +128,7 @@ void ANelia::Jump()
 	} 
 }
 
-
+//spacebar를 누르고 때면 호출되는 함수 bool변수에 false 값을 넣어줌 
 void ANelia::StopJumping()
 {
 	Super::StopJumping();
@@ -145,7 +146,7 @@ void ANelia::Tick(float DeltaTime)
 	//시간 당 스테미나 소비량 = 스테미나소비율 * 프레임 
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
-	//스태미나 상태(ESS)에 따른 움직임 상태(EMS) 예를 들어 스태미나가 충분할 시 EMS_Sprint로 950.f의 속도로 달리고 부족할 시 EMS_Normal 기본 달리기 650.f의 속도로 이동
+	//스태미나 상태(ESS)에 따른 움직임 상태(EMS) 예를 들어 스태미나가 충분할 시 EMS_Sprint로 500.f의 속도로 달리고 부족할 시 EMS_Normal 기본 달리기 300.f의 속도로 이동
 	switch (StaminaStatus)
 	{
 	
@@ -276,14 +277,14 @@ FRotator ANelia::GetLookAtRotationYaw(FVector Target)
 	return LookAtRotationYaw;
 }
 
-// Called to bind functionality to input
 void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);					
-	check(PlayerInputComponent);											//입력받은 키를 확인
+	check(PlayerInputComponent);//입력받은 키를 확인
 
+	PlayerInputComponent->BindAxis("MoveForward", this, &ANelia::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &ANelia::MoveRight);
 
-	//입력 받은 키에 따라 해당 이름에 맞는 함수 호출? JUMP, 이동, 캐릭터 회전등 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ANelia::Jump);				
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ANelia::StopJumping);
 
@@ -298,13 +299,10 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
 	PlayerInputComponent->BindAction("Pickup", IE_Released, this, &ANelia::PickupReleas);
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &ANelia::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &ANelia::MoveRight);
-
 	PlayerInputComponent->BindAxis("turn", this, &ANelia::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &ANelia::LookUp);
-	PlayerInputComponent->BindAxis("TurnRate", this, &ANelia::TurnAtRate);
-	PlayerInputComponent->BindAxis("LokkUpRate", this, &ANelia::LookUpAtRate);
+	//PlayerInputComponent->BindAxis("TurnRate", this, &ANelia::TurnAtRate);
+	//PlayerInputComponent->BindAxis("LokkUpRate", this, &ANelia::LookUpAtRate);
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ANelia::Interact);
 
@@ -327,6 +325,7 @@ bool ANelia::CanMove(float Value)
 	return false;
 }
 
+//마우스를 좌우로 움직일 경우 z값이 증가 감소함
 void ANelia::Turn(float Value)
 {
 	if (CanMove(Value))
@@ -335,7 +334,42 @@ void ANelia::Turn(float Value)
 	}
 }
 
+void ANelia::InteractClimb()
+{
+	/*TraceForward();*/
+}
 
+void ANelia::TraceForward_Implementation()
+{
+	/*FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+
+	FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+
+	FCollisionQueryParams TraceParams;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 2.f);
+
+	if (isClimb)
+	{
+		SetActorRotation(FRotator(0.f, 0.0f, Hit.Normal.Z + 180.f));
+	}
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 2.f);
+	}*/
+}
+
+void ANelia::CanClimbWall()
+{
+
+}
+
+//마우스를 상하로 움직일 경우 y값이 증가 감소함
 void ANelia::LookUp(float Value)
 {
 	if (CanMove(Value))
@@ -345,27 +379,23 @@ void ANelia::LookUp(float Value)
 }
 
 //앞,뒤 이동 Value 값을 통해 설정해둔 1,-1 값을 받아 움직인다.
-//사용자로부터 W,S키를 입력 받으면 호출되는 함수이고 컨트롤러가 있고 Value가 0이 아니고 공격, 죽은 상태가 아닐 경우 회전값과 방향을 받아 이동한다.
+//사용자로부터 W,S키를 입력 받으면 호출되는 함수이고 컨트롤러가 있고 Value가 0이 아니고 
+//공격 중인 상태 또는죽은 상태가 아닐 경우 회전값과 방향을 받아 이동한다.
 void ANelia::MoveForward(float Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("moveforward"));
+
 	bMovingForward = false;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (CanMove(Value))
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	
 		AddMovementInput(Direction, Value);
 		bMovingForward = true;
-		if (isClimb)
-		{
-			if (isClimbLedge)
-			{
-				const FVector Direction_up = GetActorUpVector();
-				AddMovementInput(Direction_up, Value);
-			}
-		}
 	}
 }
 
@@ -373,8 +403,12 @@ void ANelia::MoveForward(float Value)
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("moveRight"));
+
 	bMovingRight = false;
-	if (CanMove(Value))
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (CanMove(Value))											 
 	{
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -384,21 +418,34 @@ void ANelia::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 
 		bMovingRight = true;
+
+		//if (isClimb)
+		//{
+		//	const FVector Direction_side = GetActorRightVector();
+		//	AddMovementInput(Direction_side, Value);
+		//}
+		//if (!isClimb)
+		//{
+		//	AddMovementInput(Direction, Value);
+		//}
 	}
 }
 
 //키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능  
-void ANelia::TurnAtRate(float Rate)
-{
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
-}
+//void ANelia::TurnAtRate(float Rate)
+//{
+//	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+//}
+//
+//void ANelia::LookUpAtRate(float Rate)
+//{
+//	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+//}
 
-void ANelia::LookUpAtRate(float Rate)
-{
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
-//줍기 죽은 상태가 아니고 Item 클래스 자식인 Weapon 클래스에서 장착한 대상이 Nelia일 경우 해당 무기를 Weapon형태로 변환하고 장착 이후 nullptr로 값을 비워준다.
+//죽은 상태가 아니고 Item에서 선언한 Collision volume 안에 감지된 아이템이 있고 공격중이 아니라면
+//장착된 아이템을 weapon 형식으로 변환하여 클래스 변수 weapon에 넣어주고 해당 weapon을 장착 이후 SetActiveOverlappingitem에
+//들어갔던 아이템들을 모두 비워줌 만약 무기를 이미 장착하고 있으면 combo attack에서 사용되는 saveattack을 true로 하고 
+//공격 중이 아닐경우 Attack()함수를 호출함
 void ANelia::PickupPress()
 {
 	bPickup = true;
@@ -517,11 +564,13 @@ void ANelia::SetMovementStatus(EMovementStatus Status)
 	}
 }
 
+//shift 키를 누르는 동안 호출되는 함수 
 void ANelia::ShiftKeyDown()
 {
 	bShiftKeyDown = true;
 }
 
+//shift 키를 눌렀다 땠을 때 호출되는 함수 
 void ANelia::ShiftKeyUp()
 {
 	bShiftKeyDown = false;
@@ -529,6 +578,9 @@ void ANelia::ShiftKeyUp()
 
 //공격 중인 상태가 아니고 죽지 않았을 때 적 방향을 바라보고 Nelia의 AnimInstance를 가져옴
 //case0부터 2까지 순서대로 시행하고 마지막 Attack3를 시행 후 다시 Attack1번부터 공격 모션을 수행함
+//CombatMontage에서 공격 애니메이션마다 savecombo와 resetcombo를 지정해주었고 savecombo와 reset combo 사이에 공격 키를 계속해서 누르면 
+//1번, 2번, 3번 기본 공격 동작을 수행하지만 시간을 두고 기본 공격 키 입력 시 계속해서 reset combo에서 공격모션이 0으로 초기화되기 때문에
+//1번 공격만 하도록 구현
 void ANelia::Attack()
 {
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon)
@@ -539,23 +591,31 @@ void ANelia::Attack()
 		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
 		int pressSkillNum = MainPlayerController->CheckInputKey();
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
+		
 		if (AnimInstance && CombatMontage)
 		{
 			int32 Section = AttackMotionCount;
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 1.7f);
+				AnimInstance->Montage_Play(CombatMontage, 1.2f);
 				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.7f);
+				AnimInstance->Montage_Play(CombatMontage, 1.1f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
 				AnimInstance->Montage_Play(CombatMontage, 1.1f);
+				AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
+				break;
+			case 3:
+				AnimInstance->Montage_Play(CombatMontage, 0.8f);
 				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
+				break;
+			case 4:
+				AnimInstance->Montage_Play(CombatMontage, 0.6f);
+				AnimInstance->Montage_JumpToSection(FName("Attack5"), CombatMontage);
 				break;
 			default:
 				break;
@@ -585,7 +645,7 @@ void ANelia::Attack()
 		}
 		
 		AttackMotionCount++;
-		if (AttackMotionCount > 2)
+		if (AttackMotionCount > 4)
 		{
 			AttackMotionCount = 0;
 		}
@@ -608,7 +668,6 @@ void ANelia::ResetCombo()
 	AttackMotionCount = 0;
 	saveAttack = false;
 	bAttacking = false;
-	UE_LOG(LogTemp, Warning, TEXT("reset"));
 }
 
 void ANelia::SaveComboAttack()
@@ -618,7 +677,6 @@ void ANelia::SaveComboAttack()
 		saveAttack = false;
 		AttackEnd();
 		Attack();
-		UE_LOG(LogTemp, Warning, TEXT("savecombo"));
 	}
 }
 

@@ -9,7 +9,6 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Nelia.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Sound/SoundCue.h"
@@ -344,18 +343,14 @@ void AEnemy::Attack()
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 0.7f);
-					AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
-					break;
-				case 2:
 					AnimInstance->Montage_Play(CombatMontage, 1.7f);
-					AnimInstance->Montage_JumpToSection(FName("JumpAttack"), CombatMontage);
+					AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 					break;
 				default:
-					;
+					break;
 				}
 				EnemyAttackCount++;
-				if (EnemyAttackCount > 2)
+				if (EnemyAttackCount > 1)
 				{
 					EnemyAttackCount = 0;
 				}

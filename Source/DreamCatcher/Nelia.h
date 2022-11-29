@@ -13,9 +13,11 @@ enum class EMovementStatus : uint8        //enum클래스 열거형
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
 
-	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+	EMS_MAX          UMETA(DisplayName = "DefaultMAX")
 };
 
+//열거형
+//Blueprint에서 
 UENUM(BlueprintType)						
 enum class EStaminaStatus : uint8
 {
@@ -43,7 +45,6 @@ public:
 	bool bHasCombatTarget;
 
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
-
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
 	FVector CombatTargetLocation;
@@ -96,6 +97,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
 	float SprintingSpeed;
+
+
 
 	bool bShiftKeyDown;
 
@@ -153,25 +156,39 @@ protected:
 
 	virtual void Jump() override;
 	virtual void StopJumping() override;
+	
+
+	void InteractClimb();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
+	float TraceDistance;
+
+	UFUNCTION(BlueprintNativeEvent)
+	void TraceForward();
+	void TraceForward_Implementation();
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** called for forwards/backwards input*/
 	void MoveForward(float Value);
+
+	/** called for side to side input*/
+	void MoveRight(float Value);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool isClimb;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool isClimbLedge;
-	
-	/** called for side to side input*/
-	void MoveRight(float Value);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool isClimbUp;
+
+	void CanClimbWall();
 
 	/** called for Yaw rotation*/
 	void Turn(float Value);
@@ -242,15 +259,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillMontage;
 
-	/// ////////////////////
 	UPROPERTY(EditAnywhere)
 	class UAnimMontage* RollMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* ClimbUpMontage;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bRoll;
 
 	void Roll();
-
+	
+	//블루프린트에서 호출할 수 있도록
 	UFUNCTION(BlueprintCallable)
 	void StopRoll();
 
@@ -271,8 +291,6 @@ public:
 	TSubclassOf<AEnemy> EnemyFilter;
 
 	void SwitchLevel(FName LevelName);
-
-	
 
 	UFUNCTION(BlueprintCallable)
 	void SaveGame();
