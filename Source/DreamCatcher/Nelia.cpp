@@ -25,6 +25,9 @@
 #include "GameFramework/GameMode.h"
 #include "UserInterface.h"
 #include "DrawDebugHelpers.h"
+#include "CollisionQueryParams.h"
+
+//#include "GameFramework/Pawn.h"      이거 쓰면 이상하게 상속받은 super클래스가 캐릭터에서 폰으로 바뀜 어이없음
 
 // Sets default values
 ANelia::ANelia()
@@ -63,9 +66,9 @@ ANelia::ANelia()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.f, 0.0f); //키 입력 시 540씩 회전함
 	GetCharacterMovement()->JumpZVelocity = 650.f; //점프하는 힘
 	GetCharacterMovement()->AirControl = 0.2f; //중력의 힘
-
+	
 	MaxHealth = 100.f;
-	Health = 65.f;
+	Health = 10.f;
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
@@ -95,9 +98,11 @@ ANelia::ANelia()
 	bHasCombatTarget = false;
 
 	bRoll = false;
-	TraceDistance = 45.f;
+	TraceDistance = 40.f;
 
 	isClimb = false;
+	onClimbLedge = false;
+	isClimbUp = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -119,26 +124,145 @@ void ANelia::BeginPlay()
 //죽은 상태가 아닐 경우 bool 변수에 true를 넣어줌
 void ANelia::Jump()
 {
+	FVector LaunchVelocity;
+	bool bXYOverride = false;
+	bool bZOverride = false;
+	
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
 
 	if ((MovementStatus != EMovementStatus::EMS_Death))
 	{
-		Super::Jump();
 		bJump = true;
+		//만약 virtual void Jump() override; 상속 받은 함수에
+		//ex) //#include "GameFramework/Pawn.h"      
+		//이거 쓰면 이상하게 상속받은 super클래스가 캐릭터에서 폰으로 바뀜 어이없음
+		Super::Jump();
+
+		if (isClimb)
+		{
+			LaunchVelocity.X = GetActorForwardVector().X * -500.f;
+			LaunchVelocity.Y = GetActorForwardVector().Y * -500.f;
+			LaunchVelocity.Z = 0.f;
+
+			//space bar 입력 시 캐릭터를 일정 속도로 발사시킴
+			LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+
+			isClimb = false;
+
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+			GetCharacterMovement()->bOrientRotationToMovement = true; 
+			ChangeModeToFly();
+		}
 	} 
+}
+
+/// <summary>
+/// GetCharacterMovement()의 EMovementMode가 걷기 모드인지 확인 맞을 경우
+/// 벽을 타는지 확인 가능한 bool 변수인 isClimb에 true값을 주고
+/// GetCharacterMovement()의 벡터값을 0으로 초기화 및 EMovementMode를 Flying모드로 변환해준다.
+/// 
+/// </summary>
+void ANelia::ChangeModeToFly()
+{
+	if (EMovementMode::MOVE_Walking)
+	{
+		isClimb = true;
+		GetCharacterMovement()->Velocity = FVector(0, 0, 0);
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+		
+		//bOrientRotationToMovement는 캐릭터 이동 방향을 향하도록 회전한다.
+		//카메라가 어느 방향을 향하든 캐릭터는 항상 자신이 움직이는 방향을 향하게 된다.
+		//false이니까 그럼 카메라와 같은 방향을 향하게 되는 걸 의미???????
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+}
+
+/// <summary>
+/// Character 기준 정면 40 방향 대각선 위쪽 방향으로 135에 위치한 감지 선을 지정하고
+/// 각 정면과 대각선 선에 감지되었는지를 bool 변수 내부에 전달 감지선은 각각 초록색과 빨간색으로 나타내주고
+/// 만약 정면 선에 벽 충돌 시 onClimbLedge변수 내에 대각선 위 방향에 있는 선에 충돌한 벽이 있는지 
+/// 여부를 나타내는 bool 값을 대입 -> ChangeModeToFly()함수로 이동을하게 되고 걷고 있는 상태라면 
+/// 단 한 번 상태를 Flying 모드로 변환 감지되지 않았는데 iscClimb 변수가 true인 경우 false로 변환해주고
+/// EMovemet 모드 상태를 Walking모드로 변환 추가적으로 카메라가 보는 방향과 관련 없이 캐릭터가 이동할 수 있도록 함
+/// </summary>
+void ANelia::CanClimb()
+{
+	if (!isClimbUp)
+	{
+		FHitResult Hit;
+		FVector Start = GetActorLocation();
+		FVector End = Start + (GetActorForwardVector() * TraceDistance);
+		FVector arriveEnd = (Start + (GetActorForwardVector())+FVector(0.f, 0.f, 135.f) + (GetActorForwardVector() * TraceDistance));
+
+		FCollisionQueryParams TraceParams;
+		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+		bool bArriveHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, arriveEnd, ECC_Visibility, TraceParams);
+		
+		
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+		DrawDebugLine(GetWorld(), Start, arriveEnd, FColor::Red, false, 1, 0, 1);
+
+		if (bHit)
+		{
+			onClimbLedge = bArriveHit;
+
+			//SetActorRotation(FRotator(0.f, 0.0f, Hit.Normal.Z));
+			ChangeModeToFly();
+		}
+
+		else
+		{
+			if (isClimb)
+			{
+				isClimb = false;
+				GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+				GetCharacterMovement()->bOrientRotationToMovement = true;
+			}
+		}
+		
+		//정상 도착 시 애니메이션 수행
+		
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (isClimb && !onClimbLedge)
+		{
+
+			//UE_LOG(LogTemp, Warning, TEXT("ledge"));
+
+			isClimbUp = true;
+			isClimb = false;
+			AnimInstance->Montage_Play(ClimbTop_Two, 1.f);
+
+			//Timer(딜레이)
+			FTimerHandle WaitHandle;
+
+			GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+				{
+					//UE_LOG(LogTemp, Warning, TEXT("6"));
+					isClimbUp = false;
+					GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+					GetCharacterMovement()->bOrientRotationToMovement = true;
+				}), 3.f, false);
+		}
+	}
 }
 
 //spacebar를 누르고 때면 호출되는 함수 bool변수에 false 값을 넣어줌 
 void ANelia::StopJumping()
 {
-	Super::StopJumping();
 	bJump = false;
 }
 
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (isClimb)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("isClimbinging"));
+	}
 
+	CanClimb();
 
 	if (MovementStatus == EMovementStatus::EMS_Death) return;
 
@@ -313,14 +437,19 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 bool ANelia::CanMove(float Value)
 {
+
 	if (MainPlayerController)
 	{
-		return 
-			(Value != 0.0f) && 
+
+		if ((Value != 0.0f) &&
 			(!bAttacking) &&
-			(MovementStatus != EMovementStatus::EMS_Death) &&
+			(MovementStatus != EMovementStatus::EMS_Death)) {
+
 			//일시정지 메뉴가 화면에 떴을 때는 이동하지 못하도록 하는 부분
-			!MainPlayerController->bPauseMenuVisible;
+			MainPlayerController->bPauseMenuVisible;
+			
+			return true;
+		}
 	}
 	return false;
 }
@@ -339,6 +468,7 @@ void ANelia::InteractClimb()
 	/*TraceForward();*/
 }
 
+//수정이랑 테스트 할 곳 음 여기는 이 implementation을 정확히 이해를 못 해서 그냥 canclimb이라는 함수를 따로 만들어서 해보는 중
 void ANelia::TraceForward_Implementation()
 {
 	/*FVector Loc;
@@ -348,7 +478,7 @@ void ANelia::TraceForward_Implementation()
 	GetController()->GetPlayerViewPoint(Loc, Rot);
 
 	FVector Start = Loc;
-	FVector End = Start + (Rot.Vector() * TraceDistance);
+	FVector End = Start + (Rot.Vector().X * TraceDistance);
 
 	FCollisionQueryParams TraceParams;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
@@ -362,11 +492,6 @@ void ANelia::TraceForward_Implementation()
 	{
 		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 2.f);
 	}*/
-}
-
-void ANelia::CanClimbWall()
-{
-
 }
 
 //마우스를 상하로 움직일 경우 y값이 증가 감소함
@@ -383,12 +508,9 @@ void ANelia::LookUp(float Value)
 //공격 중인 상태 또는죽은 상태가 아닐 경우 회전값과 방향을 받아 이동한다.
 void ANelia::MoveForward(float Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("moveforward"));
-
 	bMovingForward = false;
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (CanMove(Value))
+	if (CanMove(Value) && !isClimb)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -397,16 +519,25 @@ void ANelia::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 		bMovingForward = true;
 	}
+	wallUpDown = Value * 100.f;
+	//속도를 더 높게 지정해주고 싶은데 해당 wallUpDown 값을 변환해줘도 속도가 변화되지 않음 
+	if (isClimb)
+	{
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Z);
+		AddMovementInput(Direction, wallUpDown);
+
+	}
+	UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
 }
 
 
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("moveRight"));
 
 	bMovingRight = false;
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (CanMove(Value))											 
 	{
@@ -418,20 +549,11 @@ void ANelia::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 
 		bMovingRight = true;
-
-		//if (isClimb)
-		//{
-		//	const FVector Direction_side = GetActorRightVector();
-		//	AddMovementInput(Direction_side, Value);
-		//}
-		//if (!isClimb)
-		//{
-		//	AddMovementInput(Direction, Value);
-		//}
 	}
+	wallLeftRight = Value * 100.f;
 }
 
-//키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능  
+//키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능 
 //void ANelia::TurnAtRate(float Rate)
 //{
 //	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
@@ -613,10 +735,6 @@ void ANelia::Attack()
 				AnimInstance->Montage_Play(CombatMontage, 0.8f);
 				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 				break;
-			case 4:
-				AnimInstance->Montage_Play(CombatMontage, 0.6f);
-				AnimInstance->Montage_JumpToSection(FName("Attack5"), CombatMontage);
-				break;
 			default:
 				break;
 			}
@@ -631,7 +749,6 @@ void ANelia::Attack()
 				AnimInstance->Montage_Play(SkillMontage, 1.4f);
 				AnimInstance->Montage_JumpToSection(FName("Skill4"), SkillMontage);
 
-				UE_LOG(LogTemp, Warning, TEXT("skill1"));
 
 				break;
 			case 2:
@@ -645,7 +762,7 @@ void ANelia::Attack()
 		}
 		
 		AttackMotionCount++;
-		if (AttackMotionCount > 4)
+		if (AttackMotionCount > 3)
 		{
 			AttackMotionCount = 0;
 		}

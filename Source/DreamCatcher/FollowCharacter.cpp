@@ -37,6 +37,10 @@ AFollowCharacter::AFollowCharacter()
 	CombatSphere->SetupAttachment(GetRootComponent());
 	CombatSphere->InitSphereRadius(75.f);
 
+	///////////////////////각각 왼팔 오른팔에 부착해둔 CombatCollision EnemySocket을 부착해줌 그 위치에 박스 컴포넌트가 생성된다.
+	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
+	CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("Arrow_Socket"));
+
 	bOverlappingCombatSphere = false;
 
 	Health = 75.f;
@@ -47,9 +51,6 @@ AFollowCharacter::AFollowCharacter()
 	AttackMaxTime = 3.5f;
 
 	ArcherMovementStatus = EArcherMovementStatus::EMS_Idle;
-
-
-
 
 	bHasValidTarget = false;
 
@@ -181,6 +182,24 @@ void AFollowCharacter::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedC
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 		}
 	}
+}
+
+//콜리전을 활성화시켜 주는 함수 CombatCollsion, CombatCollisionL은 실제로 내가 설정해준 Enemy의 왼손과 오른손 콜리전 
+//만약 콜리전이 활성화된 상태에서 휘두르는 소리가 있을 경우 소리를 재생한다.
+void AFollowCharacter::ActivateCollision()
+{
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	//if (SwingSound)
+	//{
+	//	UGameplayStatics::PlaySound2D(this, SwingSound);
+	//}
+}
+
+//위 내용과 반대의 내용 왼손과 오른손에 있는 콜리전을 NoCollsion을 통해 비활성화 시켜준다.
+void AFollowCharacter::DeactivateCollision()
+{
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 //Nelia에게 이동하도록 타겟으로 잡고 만약 AIController가 있으면 ///////////////////////////////////////////////////////////////////////////////

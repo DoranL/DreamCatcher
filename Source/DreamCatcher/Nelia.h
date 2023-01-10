@@ -34,6 +34,7 @@ class DREAMCATCHER_API ANelia : public ACharacter
 {
 	GENERATED_BODY()
 
+
 public:
 	// Sets default values for this character's properties
 	ANelia();
@@ -98,7 +99,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
 	float SprintingSpeed;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	float wallUpDown;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	float wallLeftRight;
 
 	bool bShiftKeyDown;
 
@@ -128,7 +133,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
 	float MaxHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
 	float Health;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
@@ -157,7 +162,6 @@ protected:
 	virtual void Jump() override;
 	virtual void StopJumping() override;
 	
-
 	void InteractClimb();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
@@ -174,21 +178,19 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** called for forwards/backwards input*/
+	
 	void MoveForward(float Value);
 
 	/** called for side to side input*/
 	void MoveRight(float Value);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool isClimb;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
-	bool isClimbLedge;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
+	bool onClimbLedge;
 	bool isClimbUp;
-
-	void CanClimbWall();
+	void CanClimb();
+	void ChangeModeToFly();
 
 	/** called for Yaw rotation*/
 	void Turn(float Value);
@@ -264,6 +266,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* ClimbUpMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* ClimbTop_Two;
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bRoll;

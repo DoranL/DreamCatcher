@@ -16,6 +16,17 @@ class DREAMCATCHER_API UFollwerAnimInstance : public UAnimInstance
 	
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-	float Speed;
+	virtual void NativeInitializeAnimation() override;
+
+	UFUNCTION(BlueprintCallable, Category = AnimationProperties)
+	void UpdateAnimationProperties();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+	float MovementSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
+	class APawn* Pawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
+	class AFollowCharacter* FollowerCharacter;
 };

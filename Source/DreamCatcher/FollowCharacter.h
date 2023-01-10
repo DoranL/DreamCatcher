@@ -70,6 +70,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
 		FVector CombatTargetLocation;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+		class UBoxComponent* CombatCollision;
+
 	float InterpSpeed;
 	bool bInterpToNelia;
 	void SetInterpToNelia(bool Interp);
@@ -112,4 +115,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
+
+	UFUNCTION(BlueprintCallable)
+		void ActivateCollision();
+
+	UFUNCTION(BlueprintCallable)
+		void DeactivateCollision();
 };

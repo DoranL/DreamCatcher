@@ -25,12 +25,13 @@ void AMainPlayerController::BeginPlay()
 	Super::BeginPlay();
 	bDialogueVisible = false;
 
+	HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
+
 	if (HUDOverlayAsset)
 	{
-		HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
+		HUDOverlay->AddToViewport();
+		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 	}
-	HUDOverlay->AddToViewport();
-	HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 
 	if (WEnemyHealthBar)
 	{
