@@ -77,9 +77,6 @@ public:
 	void OnResetOptions();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Animation Evenets")
-	void OnHighLightOption(int32 Option);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Animation Evenets")
 	void OnSetOption(int32 Option, const FText& OptionText);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
@@ -87,6 +84,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 	class ANelia* Nelia;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 SelectedOption;
 
 public:
 	void SetMessage(const FString& Text);
@@ -104,7 +104,10 @@ public:
 	bool bTextCompleted;
 	bool bAnimating;
 
+	UFUNCTION(BlueprintCallable)
 	void Interact();
+
+	int32 CurrentState = 0;
 private:
 	FTimerHandle TimerHandle;
 
@@ -119,10 +122,6 @@ private:
 	FString OutputMessage;
 
 	int32 iLetter;
-
-	int32 CurrentState = 0;
-	
-	int32 SelectedOption;
 
 	TArray<FNPCDialogue*> Dialogue;
 

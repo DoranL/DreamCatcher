@@ -16,12 +16,21 @@
 #include "TimerManager.h"
 #include "MainPlayerController.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "UObject/ConstructorHelpers.h"
+#include "UserInterface.h"
 
 // Sets default values
 AEnemy::AEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	static ConstructorHelpers::FObjectFinder<UBlueprint> ExpItem(TEXT("Blueprint'/Game/Blueprints/Dream_BP.Dream_BP'"));
+
+	if (ExpItem.Object)
+	{
+		ExpBlueprint = (UClass*)ExpItem.Object->GeneratedClass;
+	}
 
 	//AgroSphere은 Rampage의 Capsule Component에 부착되어 있는 자식 컴포넌트로 반지름 600.f는 범위를 나타내며 이 범위 안에 Nelia가 있을 경우 추적을 시작한다.
 	AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroShere"));
@@ -45,7 +54,7 @@ AEnemy::AEnemy()
 
 	bOverlappingCombatSphere = false;
 
-	Health = 75.f;
+	Health = 100.f;
 	MaxHealth = 100.f;
 	Damage = 10.f;
 
@@ -54,12 +63,13 @@ AEnemy::AEnemy()
 
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
-	DeathDelay = 3.f;
+	DeathDelay = 2.f;
 
 	bHasValidTarget = false;
 
 	InterpSpeed = 15.f;
 	bInterpToNelia = false;
+
 }
 
 // Called when the game starts or when spawned
@@ -69,6 +79,10 @@ void AEnemy::BeginPlay()
 
 	//Enemy 컨트롤러를 받아 넣어주고 각각 범위 내에 감지될 경우 해당 함수를 호출 ex) CombatCollisionLeft에 감지될 경우 CombatOnOverlapBegin() 호출
 	AIController = Cast<AAIController>(GetController());
+	//Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+
+	
+	//EnemyHUD = CreateWidget<UUserWidget>(this, HUDAsset);
 
 	AgroSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::AgroSphereOnOverlapBegin);
 	AgroSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::AgroSphereOnOverlapEnd);
@@ -150,6 +164,7 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 	if (OtherActor && Alive())
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+
 		if (Nelia)
 		{
 			MoveToTarget(Nelia);
@@ -164,6 +179,7 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 	if (OtherActor)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+
 		if (Nelia)
 		{
 			bHasValidTarget = false;
@@ -193,6 +209,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 	if (OtherActor && Alive())
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+
 		if (Nelia)
 		{
 			bHasValidTarget = true;
@@ -213,6 +230,7 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 	if (OtherActor && OtherComp)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+
 		if (Nelia)
 		{
 			bOverlappingCombatSphere = false;
@@ -263,6 +281,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 	if (OtherActor)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+
 		if (Nelia)
 		{
 			if (Nelia->HitParticles)
@@ -339,11 +358,11 @@ void AEnemy::Attack()
 				switch (Section)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 0.7f);
+					AnimInstance->Montage_Play(CombatMontage, 1.2f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 1.7f);
+					AnimInstance->Montage_Play(CombatMontage, 2.f);
 					AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 					break;
 				default:
@@ -375,14 +394,29 @@ void AEnemy::AttackEnd()
 //Enemy 체력 - 공격 받은 데미지량이 0보다 작으면 그 해당 데미지만큼 빼주고 죽은 상태이므로 Nelia의 타겟을 업데이트 해준다.
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
+	
 	if (Health - DamageAmount <= 0.f)
 	{
 		Health -= DamageAmount;
 		Die(DamageCauser);
+		bTakeDamage = false;
+		//MainPlayerController->RemoveEnemyHealthBar();
 	}
 	else
 	{
+		bTakeDamage = true;
+		
+		MainPlayerController->DisplayEnemyHealthBar();
+		UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBarPlease"));
+
 		Health -= DamageAmount;
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Play(CombatMontage, 1.f);
+			AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+		}
 	}
 
 	return DamageAmount;
@@ -392,13 +426,33 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 //이후 Nelia의 공격 대상을 업데이트를 하여 새로운 대상을 공격할 수 있도록 해줌.
 void AEnemy::Die(AActor* Causer)
 {
+	FTimerHandle WaitHandle;
+	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
+
 	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+	UWorld* world = GetWorld();
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
-		AnimInstance->Montage_Play(CombatMontage, 1.35f);
+		AnimInstance->Montage_Play(CombatMontage, 1.f);
 		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
 	}
+
+	if (world)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SpawnDream"));
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		FRotator rotator;
+		FVector SpawnLocation = GetActorLocation();
+		//FVector BoundBoxLocation = UKismetMathLibrary::RandomPointInBoundingBox(SpawnLocation, FVector(40.f, 40.f, 40.f));
+		SpawnLocation.Z -= 90.f;
+
+		world->SpawnActor<AActor>(ExpBlueprint, SpawnLocation, rotator, SpawnParams);
+	}
+	
+	MainPlayerController->RemoveEnemyHealthBar();
+	
 
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -408,7 +462,7 @@ void AEnemy::Die(AActor* Causer)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	bAttacking = false;
-
+	
 	ANelia* Nelia = Cast<ANelia>(Causer);
 	if (Nelia)
 	{
@@ -421,7 +475,7 @@ void AEnemy::DeathEnd()
 {
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
-
+	
     GetWorldTimerManager().SetTimer(DeathTimer, this, &AEnemy::Disappear, DeathDelay);
 }
 

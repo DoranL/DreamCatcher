@@ -30,6 +30,18 @@ public:
 	//캐릭터가 죽고 나서 계속 공격 당하는 걸 막는 bool 변수
 	bool bHasValidTarget;
 
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> HUDAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* EnemyHUD;*/
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class AMainPlayerController* MainPlayerController;
+
+	//class ANelia* Nelia;
+
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	EEnemyMovementStatus EnemyMovementStatus;
 
@@ -41,35 +53,35 @@ public:
 
 	//combatsphere 내에 플레이어가 들어오면 전투
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	USphereComponent* CombatSphere;
+		USphereComponent* CombatSphere;
 
 	//왜 AAIController이지
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	class AAIController* AIController;
+		class AAIController* AIController;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	float Health;
+		float Health;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	float MaxHealth;
+		float MaxHealth;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	float Damage;
+		float Damage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	class UParticleSystem* HitParticles;
+		class UParticleSystem* HitParticles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	class USoundCue* HitSound;
+		class USoundCue* HitSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	class USoundCue* SwingSound;
+		class USoundCue* SwingSound;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	class UBoxComponent* CombatCollision;
+		class UBoxComponent* CombatCollision;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	class UBoxComponent* CombatCollisionLeft;
+		class UBoxComponent* CombatCollisionLeft;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* CombatMontage;
@@ -79,13 +91,16 @@ public:
 	int EnemyAttackCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float AttackMinTime;
+		float AttackMinTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float AttackMaxTime;
+		float AttackMaxTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TSubclassOf<UDamageType> DamageTypeClass;
+		TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AActor> ExpBlueprint;
 
 	FTimerHandle DeathTimer;
 
@@ -94,6 +109,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
 	FVector CombatTargetLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bTakeDamage;
 
 	float InterpSpeed;
 	bool bInterpToNelia;
@@ -144,7 +162,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bAttacking;
 
 	void  Attack();
@@ -154,6 +172,8 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+	
+	UFUNCTION(BlueprintCallable)
 	void Die(AActor* Causer);
 
 	UFUNCTION(BlueprintCallable)

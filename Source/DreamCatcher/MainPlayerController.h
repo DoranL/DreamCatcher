@@ -26,15 +26,25 @@ public:
 
 public:
 	/** Reference to the UMG asset in the editor */
+	//위젯 새로 만든 위젯으로 교체 시험 수정빙구 - 그냥 까먹을까봐 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
 
-	/** Variable to hold the widget after creating it */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* HUDOverlay;
 
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> WD_MainAsset;*/
+
+	///** Variable to hold the widget after creating it */
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* WD_Main;*/
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WEnemyHealthBar;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* EnemyHealthBar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WPauseMenu;
@@ -44,9 +54,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* PauseMenu;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* EnemyHealthBar;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* DiedHUD;
@@ -89,8 +96,6 @@ public:
 
 	FVector EnemyLocation;
 
-	void GameModeOnly();
-
 	//스킬 사용
 	int CheckInputKey();
 
@@ -108,6 +113,4 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue")
 	class UDataTable* IntroDialogue;
-
-
 };

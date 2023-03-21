@@ -5,7 +5,6 @@
 #include "Blueprint/UserWidget.h"
 #include "Nelia.h"
 #include "Kismet/GameplayStatics.h"
-
 #include "UserInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -19,15 +18,15 @@ AMainPlayerController::AMainPlayerController()
 	}
 }
 
-
 void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	bDialogueVisible = false;
 
 	HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
+	//WD_Main = CreateWidget <UUserWidget > (this, WD_MainAsset);
 
-	if (HUDOverlayAsset)
+	if (HUDOverlay)
 	{
 		HUDOverlay->AddToViewport();
 		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
@@ -35,9 +34,12 @@ void AMainPlayerController::BeginPlay()
 
 	if (WEnemyHealthBar)
 	{
+
 		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
 		if (EnemyHealthBar)
 		{
+			UE_LOG(LogTemp, Log, TEXT("Wenemy healthbar if"));
+
 			EnemyHealthBar->AddToViewport();
 			EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 		}
@@ -75,16 +77,37 @@ void AMainPlayerController::BeginPlay()
 	}
 }
 
+void AMainPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (EnemyHealthBar)
+	{
+		FVector2D PositionInViewport;
+		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
+
+		PositionInViewport.Y -= 160.f;
+		PositionInViewport.X -= 100.f;
+		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
+
+		FVector2D SizeInViewport = FVector2D(250.f, 25.f);
+
+		//EnemyHealthBar->SetPositionInViewport(PositionInViewport);
+		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);
+	}
+}
+
 void AMainPlayerController::DialogueEvents()
 {
 
 }
 
-
 void AMainPlayerController::DisplayEnemyHealthBar()
 {
 	if (EnemyHealthBar)
 	{
+		UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBar"));
+
 		bEnemyHealthBarVisible = true;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -94,27 +117,10 @@ void AMainPlayerController::RemoveEnemyHealthBar()
 {
 	if (EnemyHealthBar)
 	{
+		UE_LOG(LogTemp, Log, TEXT("enemy healthbar hidden"));
+
 		bEnemyHealthBarVisible = false;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
-	}
-}
-
-
-void AMainPlayerController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (EnemyHealthBar)
-	{
-		FVector2D PositionInViewport;
-		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
-		PositionInViewport.Y -= 160.f;
-		PositionInViewport.X -= 60.f;
-
-		FVector2D SizeInViewport = FVector2D(250.f, 25.f);
-
-		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
-		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);
 	}
 }
 
@@ -136,7 +142,8 @@ void AMainPlayerController::RemovePauseMenu_Implementation()
 {
 	if (PauseMenu)
 	{
-		GameModeOnly();
+		//도란도란
+		//GameModeOnly();
 
 		bShowMouseCursor = false;
 
@@ -157,18 +164,14 @@ void AMainPlayerController::TogglePauseMenu()
 	}
 }
 
-void AMainPlayerController::ToggleDialogue()
-{
-	if (bDialogueVisible)
-	{
-		UserInterface->Interact();
-	}
-	else
-	{
-		DisplayDialogue();
-	}
-}
 
+/// <summary>
+/// 처음 대화 시작 시 수행하는 함수 UserInterface를 Visible로 값을 지정하고 대화 시작 시 카메라를 
+/// 돌리지 못하도록 SetCinematicMode를 지정 
+/// FInputModeGameAndUI InputModeUIOnly; SetInputMode(InputModeUIOnly);를 통해 입력을 ui만 가능하도록
+/// 그리고 대화창에서 대사 선택을 마우스를 통해서 하도록 구현하였기 때문에 마우스를 화면에 볼 수 있도록 하고 
+/// InitializeDialogue에 매개변수로 IntroDialogue를 넣어주고 호출한다.
+/// </summary>
 void AMainPlayerController::DisplayDialogue()
 {
 	if (UserInterface)
@@ -177,34 +180,31 @@ void AMainPlayerController::DisplayDialogue()
 		UserInterface->SetVisibility(ESlateVisibility::Visible);
 		SetCinematicMode(true, true, true);
 
-		FInputModeGameAndUI InputModeGameAndUI;
+		FInputModeGameAndUI InputModeUIOnly;
 
-		SetInputMode(InputModeGameAndUI);
+		SetInputMode(InputModeUIOnly);
+
 		bShowMouseCursor = true;
 		UserInterface->InitializeDialogue(IntroDialogue);
 	}
 }
 
+/// <summary>
+/// userinterface가 있을경우 마우스 커서를 사용 못하도록 없애고 dialoguevisible 불 변수를 false로두고 사용자 이동 및 카메라 이동관련 입력키를 받을 수 있도록 SetCinematicMode 설정
+/// </summary>
 void AMainPlayerController::RemoveDialogue()
 {
 	if (UserInterface)
 	{
-		GameModeOnly();
+		FInputModeGameOnly InputModeGameOnly;
+
+		SetInputMode(InputModeGameOnly);
 
 		bShowMouseCursor = false;
 
 		bDialogueVisible = false;
 		SetCinematicMode(false, true, true);
 	}
-}
-
-
-void AMainPlayerController::GameModeOnly()
-{
-
-	FInputModeGameOnly InputModeGameOnly;
-
-	SetInputMode(InputModeGameOnly);
 }
 
 int AMainPlayerController::CheckInputKey()

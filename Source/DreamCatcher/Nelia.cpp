@@ -26,6 +26,7 @@
 #include "UserInterface.h"
 #include "DrawDebugHelpers.h"
 #include "CollisionQueryParams.h"
+#include "Components/SphereComponent.h"
 
 //#include "GameFramework/Pawn.h"      이거 쓰면 이상하게 상속받은 super클래스가 캐릭터에서 폰으로 바뀜 어이없음
 
@@ -71,6 +72,10 @@ ANelia::ANelia()
 	Health = 10.f;
 	MaxStamina = 150.f;
 	Stamina = 120.f;
+
+	Level = 0;
+	Exp = 0.f;
+	MaxExp = 10.f;
 
 	Speed = 300.f;
 	SprintingSpeed = 500.f;
@@ -172,7 +177,7 @@ void ANelia::ChangeModeToFly()
 		
 		//bOrientRotationToMovement는 캐릭터 이동 방향을 향하도록 회전한다.
 		//카메라가 어느 방향을 향하든 캐릭터는 항상 자신이 움직이는 방향을 향하게 된다.
-		//false이니까 그럼 카메라와 같은 방향을 향하게 되는 걸 의미???????
+		//false이니까 그럼 카메라와 같은 방향을 향하게 되는 걸 의미???
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 	}
 }
@@ -199,8 +204,8 @@ void ANelia::CanClimb()
 		bool bArriveHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, arriveEnd, ECC_Visibility, TraceParams);
 		
 		
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
-		DrawDebugLine(GetWorld(), Start, arriveEnd, FColor::Red, false, 1, 0, 1);
+		//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+		//DrawDebugLine(GetWorld(), Start, arriveEnd, FColor::Red, false, 1, 0, 1);
 
 		if (bHit)
 		{
@@ -231,7 +236,7 @@ void ANelia::CanClimb()
 
 			isClimbUp = true;
 			isClimb = false;
-			AnimInstance->Montage_Play(ClimbTop_Two, 1.f);
+			AnimInstance->Montage_Play(ClimbTop_Two, 1.2f);
 
 			//Timer(딜레이)
 			FTimerHandle WaitHandle;
@@ -259,13 +264,12 @@ void ANelia::Tick(float DeltaTime)
 	
 	if (isClimb)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("isClimbinging"));
+		//UE_LOG(LogTemp, Warning, TEXT("isClimbinging"));
 	}
-
+	
 	CanClimb();
 
 	if (MovementStatus == EMovementStatus::EMS_Death) return;
-
 
 	//시간 당 스테미나 소비량 = 스테미나소비율 * 프레임 
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
@@ -430,9 +434,16 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ANelia::Interact);
 
-	PlayerInputComponent->BindAction("keyUp", IE_Pressed, this, &ANelia::OnKeyUp);
-	PlayerInputComponent->BindAction("KeyDown", IE_Pressed, this, &ANelia::OnKeyDown);
+	PlayerInputComponent->BindAction("SkillOne", IE_Pressed, this, &ANelia::Attack);
+	PlayerInputComponent->BindAction("SkillTwo", IE_Pressed, this, &ANelia::Attack);
+	PlayerInputComponent->BindAction("SkillThree", IE_Pressed, this, &ANelia::Attack);
+
+
 	//.bConsumeInput = false;
+
+	PlayerInputComponent->BindAxis("CameraZoom", this, &ANelia::CameraZoom);
+
+
 }
 
 bool ANelia::CanMove(float Value)
@@ -463,37 +474,6 @@ void ANelia::Turn(float Value)
 	}
 }
 
-void ANelia::InteractClimb()
-{
-	/*TraceForward();*/
-}
-
-//수정이랑 테스트 할 곳 음 여기는 이 implementation을 정확히 이해를 못 해서 그냥 canclimb이라는 함수를 따로 만들어서 해보는 중
-void ANelia::TraceForward_Implementation()
-{
-	/*FVector Loc;
-	FRotator Rot;
-	FHitResult Hit;
-
-	GetController()->GetPlayerViewPoint(Loc, Rot);
-
-	FVector Start = Loc;
-	FVector End = Start + (Rot.Vector().X * TraceDistance);
-
-	FCollisionQueryParams TraceParams;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
-	DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 2.f);
-
-	if (isClimb)
-	{
-		SetActorRotation(FRotator(0.f, 0.0f, Hit.Normal.Z + 180.f));
-	}
-	if (bHit)
-	{
-		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 2.f);
-	}*/
-}
-
 //마우스를 상하로 움직일 경우 y값이 증가 감소함
 void ANelia::LookUp(float Value)
 {
@@ -519,19 +499,26 @@ void ANelia::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 		bMovingForward = true;
 	}
-	wallUpDown = Value * 100.f;
+	wallUpDown = Value * 200.f;
+
 	//속도를 더 높게 지정해주고 싶은데 해당 wallUpDown 값을 변환해줘도 속도가 변화되지 않음 
 	if (isClimb)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Z);
+
+		//수정빙구 우선 첫번째 문제는 Direction 값에 wallUpDown 값이 입력이 안됨 그래서 위에서 value에 200.f을 곱하든 뭘 곱하든 
+		//1.0f, -1.f 값이 최대 
 		AddMovementInput(Direction, wallUpDown);
-
+		
+		UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
+		UE_LOG(LogTemp, Warning, TEXT("direction %s"), *Direction.ToString());
 	}
-	UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
 }
-
+//Log_Type 1
+//UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
+//UE_LOG(LogTemp, Warning, TEXT("direction %s"), *Direction.ToString());
 
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
@@ -596,6 +583,11 @@ void ANelia::PickupPress()
 			Attack();
 		}
 	}
+
+	if (MainPlayerController->bDialogueVisible)
+	{
+		MainPlayerController->UserInterface->Interact();
+	}
 }
 
 void ANelia::PickupReleas()
@@ -646,6 +638,16 @@ void ANelia::DecrementHealth(float Amount)
 	}
 }
 
+void ANelia::AddExp(int expRandom)
+{
+	Exp = Exp + expRandom;
+	
+	if (Exp >= MaxExp)
+	{
+		Level++;
+		Exp = 0.f;
+	}
+}
 
 //CombatMontage를 1.2배 속도로 애니메이션을 실행하고 CombatMontage의 몽타주 섹션 Death 부분으로 이동
 void ANelia::Die()
@@ -698,6 +700,14 @@ void ANelia::ShiftKeyUp()
 	bShiftKeyDown = false;
 }
 
+void ANelia::CameraZoom(const float Value)
+{
+	if (Value == 0.f || !Controller) return;
+
+	const float NewTargetArmLength = CameraBoom->TargetArmLength + Value * ZoomSteps;
+	CameraBoom->TargetArmLength = FMath::Clamp(NewTargetArmLength, MinZoomLength, MaxZoomLength);
+}
+
 //공격 중인 상태가 아니고 죽지 않았을 때 적 방향을 바라보고 Nelia의 AnimInstance를 가져옴
 //case0부터 2까지 순서대로 시행하고 마지막 Attack3를 시행 후 다시 Attack1번부터 공격 모션을 수행함
 //CombatMontage에서 공격 애니메이션마다 savecombo와 resetcombo를 지정해주었고 savecombo와 reset combo 사이에 공격 키를 계속해서 누르면 
@@ -720,19 +730,19 @@ void ANelia::Attack()
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 1.2f);
+				AnimInstance->Montage_Play(CombatMontage, 1.4f);
 				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.1f);
+				AnimInstance->Montage_Play(CombatMontage, 1.4f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.1f);
+				AnimInstance->Montage_Play(CombatMontage, 1.4f);
 				AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
 				break;
 			case 3:
-				AnimInstance->Montage_Play(CombatMontage, 0.8f);
+				AnimInstance->Montage_Play(CombatMontage, 1.4f);
 				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 				break;
 			default:
@@ -740,26 +750,32 @@ void ANelia::Attack()
 			}
 
 			///////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
-			UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
-			switch (pressSkillNum)
+			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
+			if (AnimInstance && SkillMontage)
 			{
-			case 1:
-				BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+				UE_LOG(LogTemp, Warning, TEXT("pressSkillNum"));
 
-				AnimInstance->Montage_Play(SkillMontage, 1.4f);
-				AnimInstance->Montage_JumpToSection(FName("Skill4"), SkillMontage);
-
-
-				break;
-			case 2:
-				break;
-			case 3:
-				break;
-
-			default:
-				break;
+				switch (pressSkillNum)
+				{
+				case 1:
+					//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+					AnimInstance->Montage_Play(SkillMontage, 0.9f);
+					AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
+					break;
+				case 2:
+					AnimInstance->Montage_Play(SkillMontage, 1.f);
+					AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
+					break;
+				case 3:
+					AnimInstance->Montage_Play(SkillMontage, 1.f);
+					AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
+					break;
+				default:
+					break;
+				}
 			}
 		}
+
 		
 		AttackMotionCount++;
 		if (AttackMotionCount > 3)
@@ -796,6 +812,7 @@ void ANelia::SaveComboAttack()
 		Attack();
 	}
 }
+
 
 //구르고 있지 않고 죽지 않았고 W,S 또는 A,D키를 누르고 있을 때 Nelia의 AnimInstance를 가져오고 RollMontage를 1.5배 속도로 실행한다.
 void ANelia::Roll()
@@ -847,6 +864,8 @@ void ANelia::SetInterpToEnemy(bool Interp)
 //Health - DamageAmount <= 0.f가 아닐 경우 체력에서 데미지 만큼 빼주고 리턴
 float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
 	if (Health - DamageAmount <= 0.f)
 	{
 		Health -= DamageAmount;
@@ -863,6 +882,11 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	else
 	{
 		Health -= DamageAmount;
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Play(SkillMontage, 1.f);
+			AnimInstance->Montage_JumpToSection(FName("Block"), SkillMontage);
+		}
 	}
 	return DamageAmount;
 }
@@ -871,16 +895,17 @@ void ANelia::OnDeath()
 {
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
 	MainPlayerController->UnPossess();
+	
 	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);//StartCameraFade(0.f, 0.f, 1.f, FLinearColor::Black, false, true);
 	playerCamera->StartCameraFade(0.f, 1.f, 3.f, FLinearColor::Black, false, true);
 	FTimerHandle WaitHandle;
+
 	MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Visible);
 
 	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
 	{
 			MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Hidden);
 			AGameMode* GameMode = Cast<AGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-			GameMode->RestartGame();
 	}), 3.1f, false);
 }
 
@@ -954,6 +979,10 @@ void ANelia::SaveGame()
 	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
 	SaveGameInstance->CharacterStats.Stamina = Stamina;
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.Level = Level;
+	SaveGameInstance->CharacterStats.Exp = Exp;
+	SaveGameInstance->CharacterStats.MaxExp = MaxExp;
+
 	SaveGameInstance->CharacterStats.Location = GetActorLocation();
 	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
 
@@ -982,6 +1011,9 @@ void ANelia::LoadGame(bool SetPosition)
 	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
 	Stamina = LoadGameInstance->CharacterStats.Stamina;
 	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+	Level = LoadGameInstance->CharacterStats.Level;
+	Exp = LoadGameInstance->CharacterStats.Exp;
+	MaxExp = LoadGameInstance->CharacterStats.MaxExp;
 
 	if (WeaponStorage)
 	{
@@ -1022,6 +1054,9 @@ void ANelia::LoadGameNoSwitch()
 	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
 	Stamina = LoadGameInstance->CharacterStats.Stamina;
 	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+	Level = LoadGameInstance->CharacterStats.Level;
+	Exp = LoadGameInstance->CharacterStats.Exp;
+	MaxExp = LoadGameInstance->CharacterStats.MaxExp;
 
 	if (WeaponStorage)
 	{
@@ -1040,27 +1075,34 @@ void ANelia::LoadGameNoSwitch()
 	GetMesh()->bNoSkeletonUpdate = false;
 }
 
+// 사용자가 e키를 입력했을 경우 수행되는 함수
 void ANelia::Interact()
 {	
-	if (MainPlayerController->UserInterface != nullptr)
+	/// <summary>
+	/// bCanUseDialogue는 레벨 블루프린트에서 npc 콜리전에 플레이어가 검출되었을 때만 즉 맵 전체에서 
+	/// E키를 눌렀을 때 대화창이 뜨는 것이 아니라 npc 근처에 있을 때만 올라오도록 해야하기 때문에
+	/// bool변수 bCanUseDialogue를 통해 확인
+	/// </summary>
+	if (bCanUseDialogue)
 	{
-		MainPlayerController->UserInterface->Interact();
-	}
-	MainPlayerController->ToggleDialogue();
-}
+		/// <summary>
+		/// MainPlayerController에서 맨 위에서 UserInterface를 넣어주는데 생성자이기 
+		/// 때문에 거의 확실하게 입력됨 CurrentState !=3이 의미는 대화시스템 중에 대사를 선택할 수 있는 경우가 있는데
+		/// 해당 부분이 UserInterface.cpp에서 CurrentState 3인 경우 만족하도록 코드가 구성되어 있는데 
+		/// 대화창이 떠있는 경우 e키를 한 번더 누르면 예를들어 한 대화 즉 npc와 플레이어가 대화가 있고 
+		/// 해당 npc 대사에 대한 플레이어의 선택 대사가 가능할 경우 e키를 입력하면 다음 대화로 넘어가버리는 것을 방지
+		/// </summary>
+		if (MainPlayerController->UserInterface != nullptr && (MainPlayerController->UserInterface->CurrentState !=3))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
+			//첫 대화 시작시에는 CurrentState가 0이므로 Interact의 if문을 모두 만족하지 못하고 나오게 되고 
+			MainPlayerController->UserInterface->Interact();
+		}
 
-void ANelia::OnKeyUp()
-{
-	if (MainPlayerController->UserInterface != nullptr)
-	{
-		MainPlayerController->UserInterface->OnSelectUpOption();
-	}
-}
-
-void ANelia::OnKeyDown()
-{
-	if (MainPlayerController->UserInterface != nullptr)
-	{
-		MainPlayerController->UserInterface->OnSelectDownOption();
+		//e 눌렀을 때 첫 대화인 경우 여기에 있는 if문을 수행하게 된다.
+		if (!MainPlayerController->bDialogueVisible)
+		{
+			MainPlayerController->DisplayDialogue();
+		}
 	}
 }

@@ -23,5 +23,4 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
 	TMap< FString, TSubclassOf<class AWeapon>> WeaponMap;
 	TMap< FString, TSubclassOf<class AItem>> keyMap;
-
 };

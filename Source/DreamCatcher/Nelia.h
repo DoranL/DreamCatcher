@@ -53,6 +53,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 	class AMainPlayerController* MainPlayerController;
 
+	/*UPROPERTY(BlueprintReadWrite, Category = "Enemy")
+	class AEnemy* Enemy;*/
+
 	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 UParticleSystem 클래스형 변수인 HitParticles 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 파티클
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UParticleSystem* HitParticles;
@@ -121,13 +124,26 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAcess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	void CameraZoom(const float Value);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MinZoomLength = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MaxZoomLength = 800.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float DefaultArmLength = 500.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float ZoomSteps = 30.f;
+
 	/** Base turn rates to scale turning functions for the camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	float BaseTurnRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	float BaseLookUpRate;
-
 
 	//Player Stats
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
@@ -143,6 +159,15 @@ public:
 	float Stamina;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int Level;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int Exp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int MaxExp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -153,7 +178,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DecrementHealth(float Amount);
 
-	void Die(); 
+	//leveling system
+	UFUNCTION(BlueprintCallable)
+	void AddExp(int expRandom);
+
+	UFUNCTION(BlueprintCallable)
+	void Die();
 
 protected:
 	// Called when the game starts or when spawned
@@ -162,14 +192,8 @@ protected:
 	virtual void Jump() override;
 	virtual void StopJumping() override;
 	
-	void InteractClimb();
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
 	float TraceDistance;
-
-	UFUNCTION(BlueprintNativeEvent)
-	void TraceForward();
-	void TraceForward_Implementation();
 
 public:	
 	// Called every frame
@@ -250,6 +274,7 @@ public:
 
 	int AttackMotionCount = 0;
 
+	UFUNCTION(BlueprintCallable)
 	void Attack();
 
 	UFUNCTION(BlueprintCallable)
@@ -265,12 +290,11 @@ public:
 	class UAnimMontage* RollMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* ClimbUpMontage;
+	class UAnimMontage* ClimbTop_Two;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* ClimbTop_Two;
+	class UAnimMontage* RespawnMontage;
 	
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bRoll;
 
@@ -314,9 +338,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inputs")
 	void Interact();
 
-	UFUNCTION(BlueprintCallable, Category = "Inputs")
-	void OnKeyUp();
-
-	UFUNCTION(BlueprintCallable, Category = "Inputs")
-	void OnKeyDown();
+	UPROPERTY(BlueprintReadWrite)
+	bool bCanUseDialogue;
 };

@@ -24,6 +24,15 @@ struct FCharacterStats
 	float MaxStamina;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	int Level;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	float Exp;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	float MaxExp;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	FVector Location;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")

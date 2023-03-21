@@ -70,7 +70,6 @@ void AWeapon::Equip(ANelia* Char)
 	//메쉬를 소켓에 연결
 	if (Char)
 	{
-
 		SetInstigator(Char->GetController());
 
 		//이게 무기가 카메라를 가려도 확대하지 않고 무시한다는 내용인가요?
