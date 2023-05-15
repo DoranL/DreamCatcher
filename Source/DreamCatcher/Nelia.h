@@ -1,19 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
-
 #include "CoreMinimal.h"                   //언리얼 오브젝트가 동작할 수 있는 최소 기능만 선언된 헤더 파일 ex)Templates , Generic, Containers, Math 포함
 #include "GameFramework/Character.h"
 #include "Nelia.generated.h"
 
-UENUM(BlueprintType)					  //블루프린트에서 Nelia 이동 설정할 때 열거형으로 Normal, Sprinting, Dead 중 하나 선택 가능
-enum class EMovementStatus : uint8        //enum클래스 열거형 
+UENUM(BlueprintType)
+enum class EMovementStatus : uint8
 {
-	EMS_Normal		 UMETA(DisplayName = "Normal"), 
+	EMS_Normal		 UMETA(DisplayName = "Normal"),
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
 
-	EMS_MAX          UMETA(DisplayName = "DefaultMAX")
+	EMS_MAX          UMETA(DisplayName = "Max"),
 };
 
 //열거형
@@ -33,8 +30,6 @@ UCLASS()
 class DREAMCATCHER_API ANelia : public ACharacter
 {
 	GENERATED_BODY()
-
-
 public:
 	// Sets default values for this character's properties
 	ANelia();
@@ -102,10 +97,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
 	float SprintingSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
 	float wallUpDown;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Running")
 	float wallLeftRight;
 
 	bool bShiftKeyDown;
@@ -165,10 +160,16 @@ public:
 	int Exp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
-	int MaxExp;
+	int MaxExp = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int checkPointCount;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int32 RandomInt;
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -180,7 +181,10 @@ public:
 
 	//leveling system
 	UFUNCTION(BlueprintCallable)
-	void AddExp(int expRandom);
+	void AddExp();
+
+	/*UFUNCTION(BlueprintCallable)
+	void PlayerMaterailEffect(const FLinearColor& Color);*/
 
 	UFUNCTION(BlueprintCallable)
 	void Die();
@@ -191,7 +195,7 @@ protected:
 
 	virtual void Jump() override;
 	virtual void StopJumping() override;
-	
+	 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
 	float TraceDistance;
 
@@ -230,12 +234,13 @@ public:
 	/** Called via input to turn at a given rate
 	* @parm Rate This is a normalized rate, i.e 1.0 means 100% of desired turn rate
 	*/
-	void TurnAtRate(float Rate);
+	//void TurnAtRate(float Rate);
 
 	/** Called via input to look up/down at a given rate
 	* @parm Rate This is a normalized rate, i.e 1.0 means 100% of desired look up/down rate
 	*/
-	void LookUpAtRate(float Rate);
+	
+	//void LookUpAtRate(float Rate);
 
 	bool bPickup;
 	void PickupPress();
@@ -244,6 +249,9 @@ public:
 	bool bESCDown;
 	void ESCDown();
 	void ESCUp();
+
+	void Block();
+	void BlockEnd();
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
@@ -282,6 +290,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* BlockMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillMontage;

@@ -26,7 +26,6 @@ public:
 
 public:
 	/** Reference to the UMG asset in the editor */
-	//위젯 새로 만든 위젯으로 교체 시험 수정빙구 - 그냥 까먹을까봐 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
 

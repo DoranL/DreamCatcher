@@ -39,7 +39,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 	class AMainPlayerController* MainPlayerController;
 
-	//class ANelia* Nelia;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class ANelia* Nelia;
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -53,10 +54,10 @@ public:
 
 	//combatsphere 내에 플레이어가 들어오면 전투
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-		USphereComponent* CombatSphere;
+	class USphereComponent* CombatSphere;
 
 	//왜 AAIController이지
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 		class AAIController* AIController;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
@@ -148,6 +149,9 @@ public:
 	bool bOverlappingCombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bOverlappingAgroSphere;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	ANelia* CombatTarget;
 
 	UFUNCTION()
@@ -161,6 +165,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
+
+	UFUNCTION(BlueprintCallable)
+	void AddDreamItem();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bAttacking;

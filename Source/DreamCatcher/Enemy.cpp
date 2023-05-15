@@ -53,13 +53,14 @@ AEnemy::AEnemy()
 	CombatCollisionLeft->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket1"));
 
 	bOverlappingCombatSphere = false;
+	bOverlappingAgroSphere = false;
 
 	Health = 100.f;
 	MaxHealth = 100.f;
 	Damage = 10.f;
 
 	AttackMinTime = 0.5f;
-	AttackMaxTime = 3.5f;
+	AttackMaxTime = 1.f;
 
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
@@ -79,7 +80,7 @@ void AEnemy::BeginPlay()
 
 	//Enemy 컨트롤러를 받아 넣어주고 각각 범위 내에 감지될 경우 해당 함수를 호출 ex) CombatCollisionLeft에 감지될 경우 CombatOnOverlapBegin() 호출
 	AIController = Cast<AAIController>(GetController());
-	//Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
 	
 	//EnemyHUD = CreateWidget<UUserWidget>(this, HUDAsset);
@@ -163,11 +164,12 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 {
 	if (OtherActor && Alive())
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		ANelia* Target = Cast<ANelia>(OtherActor);
 
-		if (Nelia)
+		if (Target)
 		{
-			MoveToTarget(Nelia);
+			MoveToTarget(Target);
+			bOverlappingAgroSphere = true;
 		}
 	}
 }
@@ -178,21 +180,22 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 {
 	if (OtherActor)
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		ANelia* Target = Cast<ANelia>(OtherActor);
 
-		if (Nelia)
+		if (Target)
 		{
 			bHasValidTarget = false;
 			 
-			if (Nelia->CombatTarget == this)
+			if (Target->CombatTarget == this)
 			{
-				Nelia->SetCombatTarget(nullptr);
+				Target->SetCombatTarget(nullptr);
+				bOverlappingAgroSphere = false;
 				//Nelia->UpdateCombatTarget();
 			}
 
-			Nelia->SetHasCombatTarget(false);
+			Target->SetHasCombatTarget(false);
 
-			Nelia->UpdateCombatTarget();
+			Target->UpdateCombatTarget();
 
 			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
 			if (AIController)
@@ -208,18 +211,18 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 {
 	if (OtherActor && Alive())
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
-
-		if (Nelia)
+		ANelia* Target = Cast<ANelia>(OtherActor);
+		
+		if (Target)
 		{
 			bHasValidTarget = true;
 
-			Nelia->SetCombatTarget(this);
-			Nelia->SetHasCombatTarget(true);
+			Target->SetCombatTarget(this);
+			Target->SetHasCombatTarget(true);
 			
-			Nelia->UpdateCombatTarget();
+			Target->UpdateCombatTarget();
 
-			CombatTarget = Nelia;
+			CombatTarget = Target;
 			bOverlappingCombatSphere = true;
 			Attack();
 		}
@@ -229,24 +232,24 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 {
 	if (OtherActor && OtherComp)
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		ANelia* Target = Cast<ANelia>(OtherActor);
 
-		if (Nelia)
+		if (Target)
 		{
 			bOverlappingCombatSphere = false;
-			MoveToTarget(Nelia);
+			MoveToTarget(Target);
 			CombatTarget = nullptr;
 
-			if (Nelia->CombatTarget == this)
+			if (Target->CombatTarget == this)
 			{
-				Nelia->SetCombatTarget(nullptr);
-				Nelia->bHasCombatTarget = false;
-				Nelia->UpdateCombatTarget();
+				Target->SetCombatTarget(nullptr);
+				Target->bHasCombatTarget = false;
+				Target->UpdateCombatTarget();
 			}
-			if (Nelia->MainPlayerController)
+			if (Target->MainPlayerController)
 			{
 				USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
-				if (NeliaMesh) Nelia->MainPlayerController->RemoveEnemyHealthBar();
+				if (NeliaMesh) Target->MainPlayerController->RemoveEnemyHealthBar();
 			}
 
 			GetWorldTimerManager().ClearTimer(AttackTimer);
@@ -258,7 +261,6 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 void AEnemy::MoveToTarget(ANelia* Target)
 {
 	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_MoveToTarget);
-
 	if (AIController)
 	{
 		FAIMoveRequest MoveRequest;
@@ -280,28 +282,28 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	if (OtherActor)
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		ANelia* Target = Cast<ANelia>(OtherActor);
 
-		if (Nelia)
+		if (Target)
 		{
-			if (Nelia->HitParticles)
+			if (Target->HitParticles)
 			{
 				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName("TipSocket");
 				if (TipSocket)
 				{
 					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Nelia->HitParticles, SocketLocation, FRotator(0.f), false);
+					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Target->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
 			}
 		
-			if (Nelia->HitSound)
+			if (Target->HitSound)
 			{
-				UGameplayStatics::PlaySound2D(this, Nelia->HitSound);
+				UGameplayStatics::PlaySound2D(this, Target->HitSound);
 			}
 			/////////
 			if (DamageTypeClass)
 			{
-				UGameplayStatics::ApplyDamage(Nelia, Damage, AIController, this, DamageTypeClass);
+				UGameplayStatics::ApplyDamage(Target, Damage, AIController, this, DamageTypeClass);
 			}
 		}
 	}
@@ -358,7 +360,7 @@ void AEnemy::Attack()
 				switch (Section)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 1.2f);
+					AnimInstance->Montage_Play(CombatMontage, 0.5f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
@@ -388,6 +390,13 @@ void AEnemy::AttackEnd()
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
 		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
+
+	else if (bOverlappingAgroSphere)
+	{
+		
+			MoveToTarget(Nelia);
+		
+	}
 }
 
 
@@ -409,7 +418,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		bTakeDamage = true;
 		
 		MainPlayerController->DisplayEnemyHealthBar();
-		UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBarPlease"));
+		//UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBarPlease"));
 
 		Health -= DamageAmount;
 		if (AnimInstance)
@@ -420,6 +429,11 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 
 	return DamageAmount;
+}
+
+void AEnemy::AddDreamItem()
+{
+
 }
 
 //상태를 죽은 상태로 두고 DeathMontage에서 애니메이션을 실행 앞에서 설정해둔 Collision과 Capsule Component를 모두 지워준다.
@@ -437,19 +451,6 @@ void AEnemy::Die(AActor* Causer)
 		AnimInstance->Montage_Play(CombatMontage, 1.f);
 		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
 	}
-
-	if (world)
-	{
-		UE_LOG(LogTemp, Log, TEXT("SpawnDream"));
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		FRotator rotator;
-		FVector SpawnLocation = GetActorLocation();
-		//FVector BoundBoxLocation = UKismetMathLibrary::RandomPointInBoundingBox(SpawnLocation, FVector(40.f, 40.f, 40.f));
-		SpawnLocation.Z -= 90.f;
-
-		world->SpawnActor<AActor>(ExpBlueprint, SpawnLocation, rotator, SpawnParams);
-	}
 	
 	MainPlayerController->RemoveEnemyHealthBar();
 	
@@ -463,10 +464,10 @@ void AEnemy::Die(AActor* Causer)
 
 	bAttacking = false;
 	
-	ANelia* Nelia = Cast<ANelia>(Causer);
-	if (Nelia)
+	ANelia* Target = Cast<ANelia>(Causer);
+	if (Target)
 	{
-		Nelia->UpdateCombatTarget();
+		Target->UpdateCombatTarget();
 	}
 }
 
@@ -486,5 +487,27 @@ bool AEnemy::Alive()
 
 void AEnemy::Disappear()
 {
+	UWorld* world = GetWorld();
+
 	Destroy();
+
+	if (world)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		FRotator rotator;
+		FVector SpawnLocation = GetActorLocation();
+
+		int32 NumToSpawn = FMath::RandRange(1, 2);  // 랜덤한 개수 설정 (1부터 10 사이의 값으로 변경 가능)
+
+		FVector OffsetRange(60.f, 40.f, 40.f);
+
+		for (int32 i = 0; i < NumToSpawn; i++)
+		{
+			FVector RandomOffset = FVector(FMath::RandRange(-OffsetRange.X, OffsetRange.X), FMath::RandRange(-OffsetRange.Y, OffsetRange.Y), -30.f);
+			FVector SpawnOffset = SpawnLocation + RandomOffset;
+
+			world->SpawnActor<AActor>(ExpBlueprint, SpawnLocation, rotator, SpawnParams);
+		}
+	}
 }

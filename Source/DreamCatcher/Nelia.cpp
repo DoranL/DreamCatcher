@@ -69,13 +69,13 @@ ANelia::ANelia()
 	GetCharacterMovement()->AirControl = 0.2f; //중력의 힘
 	
 	MaxHealth = 100.f;
-	Health = 10.f;
+	Health = 100.f;
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
 	Level = 0;
 	Exp = 0.f;
-	MaxExp = 10.f;
+	MaxExp = 100.f;
 
 	Speed = 300.f;
 	SprintingSpeed = 500.f;
@@ -108,6 +108,11 @@ ANelia::ANelia()
 	isClimb = false;
 	onClimbLedge = false;
 	isClimbUp = false;
+	
+	checkPointCount = 0;
+
+	wallLeftRight = 100.f;
+	wallUpDown = 100.f;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -117,7 +122,7 @@ void ANelia::BeginPlay()
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
 
-	LoadGameNoSwitch();
+	//LoadGameNoSwitch();
 
 	//if (MainPlayerController)
 	//{
@@ -261,11 +266,6 @@ void ANelia::StopJumping()
 void ANelia::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	if (isClimb)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("isClimbinging"));
-	}
 	
 	CanClimb();
 
@@ -422,6 +422,9 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &ANelia::ESCDown);
 	PlayerInputComponent->BindAction("ESC", IE_Released, this, &ANelia::ESCUp);
 
+	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ANelia::Block);
+	PlayerInputComponent->BindAction("Block", IE_Released, this, &ANelia::BlockEnd);
+
 	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &ANelia::Roll);
 
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
@@ -495,25 +498,31 @@ void ANelia::MoveForward(float Value)
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
 		AddMovementInput(Direction, Value);
 		bMovingForward = true;
 	}
-	wallUpDown = Value * 200.f;
 
 	//속도를 더 높게 지정해주고 싶은데 해당 wallUpDown 값을 변환해줘도 속도가 변화되지 않음 
 	if (isClimb)
 	{
+		wallUpDown = Value * 1000.f;
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Z);
 
-		//수정빙구 우선 첫번째 문제는 Direction 값에 wallUpDown 값이 입력이 안됨 그래서 위에서 value에 200.f을 곱하든 뭘 곱하든 
-		//1.0f, -1.f 값이 최대 
+		//test->>>> 원래 GetCharacterMovement()->Velocity = FVector(0, 0, 1000.f); 없었음
+		if (Value != 0.0f)
+		{
+			GetCharacterMovement()->Velocity = FVector(0, 0, Value*150.f);
+		}
+		//위에꺼 안되면 아래꺼 
+		//GetCharacterMovement()->Velocity = FVector(0, 0, Value*1000.f);
+
+		//1.0f, -1.f 값이 최대 test 부분
 		AddMovementInput(Direction, wallUpDown);
-		
-		UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
-		UE_LOG(LogTemp, Warning, TEXT("direction %s"), *Direction.ToString());
+
+		//UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
 	}
 }
 //Log_Type 1
@@ -523,21 +532,33 @@ void ANelia::MoveForward(float Value)
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
 {
+	if (CanMove(Value) && !isClimb)
+	{
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		AddMovementInput(Direction, Value);
+		bMovingRight = true;
+	}
 
 	bMovingRight = false;
-
-	if (CanMove(Value))											 
+	if (isClimb)											 
 	{
+		wallLeftRight = Value * 1000.f;
 		//find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, Value);
 
-		bMovingRight = true;
+		if (Value != 0.0f)
+		{
+			GetCharacterMovement()->Velocity = FVector(Value * 150.f,0, 0);
+		}
+
+		AddMovementInput(Direction, wallLeftRight);
 	}
-	wallLeftRight = Value * 100.f;
 }
 
 //키를 누르고 있으면 컨트롤러가 1초안에 65도 회전 가능 
@@ -611,6 +632,30 @@ void ANelia::ESCUp()
 	bESCDown = false;
 }
 
+void ANelia::Block()
+{
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death)
+	{
+		bAttacking = true;
+		SetInterpToEnemy(true);
+
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && BlockMontage)
+		{
+			AnimInstance->Montage_Play(BlockMontage, 1.4f);
+			AnimInstance->Montage_JumpToSection(FName("Parrying"), BlockMontage);
+		}
+	}
+}
+
+//건드림
+void ANelia::BlockEnd()
+{
+	bAttacking = false;
+}
+
+
 //체력 증가 함수 
 void ANelia::IncrementHealth(float Amount)
 {
@@ -638,14 +683,16 @@ void ANelia::DecrementHealth(float Amount)
 	}
 }
 
-void ANelia::AddExp(int expRandom)
+void ANelia::AddExp()
 {
-	Exp = Exp + expRandom;
+	RandomInt = FMath::RandRange(10, 30);
+	Exp += RandomInt;
 	
 	if (Exp >= MaxExp)
 	{
-		Level++;
+		Level+= 1;
 		Exp = 0.f;
+		//UE_LOG(LogTemp, Warning, TEXT("MaxExp%d"), MaxExp);
 	}
 }
 
@@ -660,8 +707,7 @@ void ANelia::Die()
 	if (AnimInstance && CombatMontage)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.2f);
-		AnimInstance->Montage_JumpToSection(FName("Death"));
-		
+		AnimInstance->Montage_JumpToSection(FName("Death"));	
 	}
 	SetMovementStatus(EMovementStatus::EMS_Death);
 	OnDeath();
@@ -753,7 +799,7 @@ void ANelia::Attack()
 			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
 			if (AnimInstance && SkillMontage)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("pressSkillNum"));
+				//UE_LOG(LogTemp, Warning, TEXT("pressSkillNum"));
 
 				switch (pressSkillNum)
 				{
@@ -767,7 +813,7 @@ void ANelia::Attack()
 					AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 					break;
 				case 3:
-					AnimInstance->Montage_Play(SkillMontage, 1.f);
+					AnimInstance->Montage_Play(SkillMontage, 0.2f);
 					AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
 					break;
 				default:
@@ -812,7 +858,7 @@ void ANelia::SaveComboAttack()
 		Attack();
 	}
 }
-
+ 
 
 //구르고 있지 않고 죽지 않았고 W,S 또는 A,D키를 누르고 있을 때 Nelia의 AnimInstance를 가져오고 RollMontage를 1.5배 속도로 실행한다.
 void ANelia::Roll()
@@ -973,80 +1019,82 @@ void ANelia::SwitchLevel(FName LevelName)
 
 void ANelia::SaveGame()
 {
-	UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
-	
-	SaveGameInstance->CharacterStats.Health = Health;
-	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
-	SaveGameInstance->CharacterStats.Stamina = Stamina;
-	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
-	SaveGameInstance->CharacterStats.Level = Level;
-	SaveGameInstance->CharacterStats.Exp = Exp;
-	SaveGameInstance->CharacterStats.MaxExp = MaxExp;
+	//UE_LOG(LogTemp, Warning, TEXT("SaveGame"));
+	//UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	//
+	//SaveGameInstance->CharacterStats.Health = Health;
+	//SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+	//SaveGameInstance->CharacterStats.Stamina = Stamina;
+	//SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	//SaveGameInstance->CharacterStats.Level = Level;
+	//SaveGameInstance->CharacterStats.Exp = Exp;
+	////SaveGameInstance->CharacterStats.MaxExp = MaxExp;
 
-	SaveGameInstance->CharacterStats.Location = GetActorLocation();
-	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
+	//SaveGameInstance->CharacterStats.Location = GetActorLocation();
+	//SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
 
-	//현재 캐릭터가 있는 맵의 이름 StreamingLevelPrefix를 하니까 UEDPIE_0_ElvenRuins 이렇게 안 뜨고 
-	//맵 이름인 ElvenRuins만 뜸
-	FString MapName = GetWorld()->GetMapName();
-	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+	////현재 캐릭터가 있는 맵의 이름 StreamingLevelPrefix를 하니까 UEDPIE_0_ElvenRuins 이렇게 안 뜨고 
+	////맵 이름인 ElvenRuins만 뜸
+	//FString MapName = GetWorld()->GetMapName();
+	//MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
-	SaveGameInstance->CharacterStats.LevelName = MapName;
+	//SaveGameInstance->CharacterStats.LevelName = MapName;
 
-	if (EquippedWeapon)
-	{
-		SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
-	}
+	//if (EquippedWeapon)
+	//{
+	//	SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
+	//}
 
-	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex); 
+	//UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex); 
 }
 
 void ANelia::LoadGame(bool SetPosition)
 {
-	UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	//UE_LOG(LogTemp, Warning, TEXT("LoadGame"));
+	//UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
 
-	LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+	//LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
 
-	Health = LoadGameInstance->CharacterStats.Health;
-	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
-	Stamina = LoadGameInstance->CharacterStats.Stamina;
-	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
-	Level = LoadGameInstance->CharacterStats.Level;
-	Exp = LoadGameInstance->CharacterStats.Exp;
-	MaxExp = LoadGameInstance->CharacterStats.MaxExp;
+	//Health = LoadGameInstance->CharacterStats.Health;
+	//MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+	//Stamina = LoadGameInstance->CharacterStats.Stamina;
+	//MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+	//Level = LoadGameInstance->CharacterStats.Level;
+	//Exp = LoadGameInstance->CharacterStats.Exp;
+	////MaxExp = LoadGameInstance->CharacterStats.MaxExp;
 
-	if (WeaponStorage)
-	{
-		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
-		if (Weapons)
-		{
-			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+	//if (WeaponStorage)
+	//{
+	//	AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+	//	if (Weapons)
+	//	{
+	//		FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
 
-			AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-			WeaponToEquip->Equip(this);
-		}
-	}
+	//		AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
+	//		WeaponToEquip->Equip(this);
+	//	}
+	//}
 
-	if (SetPosition)
-	{
-		SetActorLocation(LoadGameInstance->CharacterStats.Location);
-		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
-	}
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-	GetMesh()->bPauseAnims = false;
-	GetMesh()->bNoSkeletonUpdate = false;
+	//if (SetPosition)
+	//{
+	//	SetActorLocation(LoadGameInstance->CharacterStats.Location);
+	//	SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+	//}
+	//SetMovementStatus(EMovementStatus::EMS_Normal);
+	//GetMesh()->bPauseAnims = false;
+	//GetMesh()->bNoSkeletonUpdate = false;
 
-	if (LoadGameInstance->CharacterStats.LevelName != TEXT(""))
-	{
-		FName LevelName(*LoadGameInstance->CharacterStats.LevelName);
+	//if (LoadGameInstance->CharacterStats.LevelName != TEXT(""))
+	//{
+	//	FName LevelName(*LoadGameInstance->CharacterStats.LevelName);
 
-		SwitchLevel(LevelName);
-	}
+	//	SwitchLevel(LevelName);
+	//}
 }
 
 void ANelia::LoadGameNoSwitch()
 {
-	UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	/*UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
 
 	LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
 
@@ -1072,7 +1120,7 @@ void ANelia::LoadGameNoSwitch()
 
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
-	GetMesh()->bNoSkeletonUpdate = false;
+	GetMesh()->bNoSkeletonUpdate = false;*/
 }
 
 // 사용자가 e키를 입력했을 경우 수행되는 함수
@@ -1094,7 +1142,7 @@ void ANelia::Interact()
 		/// </summary>
 		if (MainPlayerController->UserInterface != nullptr && (MainPlayerController->UserInterface->CurrentState !=3))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
+			//UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
 			//첫 대화 시작시에는 CurrentState가 0이므로 Interact의 if문을 모두 만족하지 못하고 나오게 되고 
 			MainPlayerController->UserInterface->Interact();
 		}
