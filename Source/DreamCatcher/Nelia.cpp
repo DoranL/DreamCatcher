@@ -113,6 +113,8 @@ ANelia::ANelia()
 
 	wallLeftRight = 100.f;
 	wallUpDown = 100.f;
+
+	DeathDelay = 3.f;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -161,6 +163,7 @@ void ANelia::Jump()
 
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 			GetCharacterMovement()->bOrientRotationToMovement = true; 
+			//수정이
 			ChangeModeToFly();
 		}
 	} 
@@ -180,9 +183,7 @@ void ANelia::ChangeModeToFly()
 		GetCharacterMovement()->Velocity = FVector(0, 0, 0);
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		
-		//bOrientRotationToMovement는 캐릭터 이동 방향을 향하도록 회전한다.
-		//카메라가 어느 방향을 향하든 캐릭터는 항상 자신이 움직이는 방향을 향하게 된다.
-		//false이니까 그럼 카메라와 같은 방향을 향하게 되는 걸 의미???
+		//climb 도중 카메라 회전은 필요하지 않아서 카메라 회전을 잠금
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 	}
 }
@@ -201,6 +202,7 @@ void ANelia::CanClimb()
 	{
 		FHitResult Hit;
 		FVector Start = GetActorLocation();
+		//TraceDistance는 시작할 때 40.f을 대입
 		FVector End = Start + (GetActorForwardVector() * TraceDistance);
 		FVector arriveEnd = (Start + (GetActorForwardVector())+FVector(0.f, 0.f, 135.f) + (GetActorForwardVector() * TraceDistance));
 
@@ -428,7 +430,6 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &ANelia::Roll);
 
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
-	PlayerInputComponent->BindAction("Pickup", IE_Released, this, &ANelia::PickupReleas);
 
 	PlayerInputComponent->BindAxis("turn", this, &ANelia::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &ANelia::LookUp);
@@ -514,7 +515,7 @@ void ANelia::MoveForward(float Value)
 		//test->>>> 원래 GetCharacterMovement()->Velocity = FVector(0, 0, 1000.f); 없었음
 		if (Value != 0.0f)
 		{
-			GetCharacterMovement()->Velocity = FVector(0, 0, Value*150.f);
+			GetCharacterMovement()->Velocity = FVector(0, 0, Value*100.f);
 		}
 		//위에꺼 안되면 아래꺼 
 		//GetCharacterMovement()->Velocity = FVector(0, 0, Value*1000.f);
@@ -542,7 +543,6 @@ void ANelia::MoveRight(float Value)
 		bMovingRight = true;
 	}
 
-	bMovingRight = false;
 	if (isClimb)											 
 	{
 		wallLeftRight = Value * 1000.f;
@@ -584,7 +584,7 @@ void ANelia::PickupPress()
 
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
 
-	if (ActiveOverlappingItem && !bAttacking)
+	if (ActiveOverlappingItem && !bAttacking && !EquippedWeapon)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon)
@@ -593,7 +593,7 @@ void ANelia::PickupPress()
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
-	else if (EquippedWeapon)
+	else
 	{
 		if (bAttacking)
 		{
@@ -611,10 +611,6 @@ void ANelia::PickupPress()
 	}
 }
 
-void ANelia::PickupReleas()
-{
-	bPickup = false;
-}
 
 //ESC, Q 입력 시 해당 Pause 메뉴 창이 뜸 개발 과정에서는 ESC 입력 시 플레이가 중지되기 때문에 마지막에 Q는 빼줄 예정 
 void ANelia::ESCDown()
@@ -761,7 +757,7 @@ void ANelia::CameraZoom(const float Value)
 //1번 공격만 하도록 구현
 void ANelia::Attack()
 {
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible)
 	{
 		bAttacking = true;
 		SetInterpToEnemy(true);
@@ -773,22 +769,24 @@ void ANelia::Attack()
 		if (AnimInstance && CombatMontage)
 		{
 			int32 Section = AttackMotionCount;
+			PlaySwingSound();
+
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 1.4f);
+				AnimInstance->Montage_Play(CombatMontage, 2.f);
 				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.4f);
+				AnimInstance->Montage_Play(CombatMontage, 1.8f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.4f);
+				AnimInstance->Montage_Play(CombatMontage, 1.8f);
 				AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
 				break;
 			case 3:
-				AnimInstance->Montage_Play(CombatMontage, 1.4f);
+				AnimInstance->Montage_Play(CombatMontage, 1.8f);
 				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
 				break;
 			default:
@@ -813,7 +811,7 @@ void ANelia::Attack()
 					AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 					break;
 				case 3:
-					AnimInstance->Montage_Play(SkillMontage, 0.2f);
+					AnimInstance->Montage_Play(SkillMontage, 1.);
 					AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
 					break;
 				default:
@@ -835,11 +833,6 @@ void ANelia::AttackEnd()
 {
 	bAttacking = false;
 	SetInterpToEnemy(false);
-
-	if (bPickup)
-	{
-		Attack();
-	}
 }
 
 void ANelia::ResetCombo()
@@ -894,6 +887,8 @@ void ANelia::StopRoll()
 //장착한 무기에 SwingSound가 있으면 소리를 재생
 void ANelia::PlaySwingSound()
 { 
+	//UE_LOG(LogTemp, Warning, TEXT("equippedweapon"));
+
 	if (EquippedWeapon->SwingSound)
 	{
 		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
@@ -936,25 +931,93 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 	return DamageAmount;
 }
-
 void ANelia::OnDeath()
 {
-	MainPlayerController = Cast<AMainPlayerController>(GetController());
+	FTimerHandle DeathTimer;
+
+	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	MainPlayerController->UnPossess();
-	
-	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);//StartCameraFade(0.f, 0.f, 1.f, FLinearColor::Black, false, true);
-	playerCamera->StartCameraFade(0.f, 1.f, 3.f, FLinearColor::Black, false, true);
-	FTimerHandle WaitHandle;
+
+	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+	if (playerCamera)
+	{
+		playerCamera->StartCameraFade(0.f, 1.f, 3.f, FLinearColor::Black, false, true);
+	}
 
 	MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Visible);
 
-	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-	{
-			MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Hidden);
-			AGameMode* GameMode = Cast<AGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-	}), 3.1f, false);
+	UE_LOG(LogTemp, Warning, TEXT("OnDeathOnDeathOnDeath"));
+
+	Respawn();
+
+	//GetWorld()->GetTimerManager().SetTimer(DeathTimer, FTimerDelegate::CreateLambda([&]()
+	//	{
+	//		// 죽음 HUD 숨기기
+	//		GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
+	//		Respawn();
+	//	}), DeathDelay, false);
 }
 
+void ANelia::Respawn()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Respawn check"));
+
+	FVector RespawnLocation = FVector(-5846.589844, 6323.025879, 7500.007812);
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	// 캐릭터 컨트롤러 포세스
+	MainPlayerController->Possess(this);
+	SetActorLocation(RespawnLocation);
+
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+
+	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+	// 카메라 페이드 인
+	if (playerCamera)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Respawn------->playerCamera"));
+		MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Hidden);
+
+		playerCamera->StartCameraFade(1.f, 0.f, 3.f, FLinearColor::Black, false, true);
+	}
+
+	if (AnimInstance && CombatMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimInstance && CombatMontage"));
+
+		GetMesh()->bPauseAnims = false;
+		GetMesh()->bNoSkeletonUpdate = false;
+		AnimInstance->Montage_Play(CombatMontage, 0.7f);
+		AnimInstance->Montage_JumpToSection(FName("Revive"), CombatMontage);
+		Health += 50.f;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Respawn------->End"));
+}
+
+//void ANelia::Revive()
+//{
+//	UE_LOG(LogTemp, Warning, TEXT("Revive check"));
+//
+//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+//	//APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+//	if (AnimInstance && CombatMontage)
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("ReviveReviveReviveRevive"));
+//
+//		GetMesh()->bPauseAnims = false;
+//		AnimInstance->Montage_Play(CombatMontage);
+//		AnimInstance->Montage_JumpToSection(FName("Revive"));
+//		GetMesh()->bNoSkeletonUpdate = false;
+//
+//		Health += 50.f;
+//	}
+//}
+
+void ANelia::ReviveEnd()
+{
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+}
 
 //OverlappingActors라는 배열(순서대로 나열되는)을 만들고 배열에 아무것도 없고 MainPlayerController이면 적 체력바를 안 보이도록 한다.
 void ANelia::UpdateCombatTarget()
@@ -1019,7 +1082,7 @@ void ANelia::SwitchLevel(FName LevelName)
 
 void ANelia::SaveGame()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("SaveGame"));
+	////UE_LOG(LogTemp, Warning, TEXT("SaveGame"));
 	//UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
 	//
 	//SaveGameInstance->CharacterStats.Health = Health;
@@ -1142,7 +1205,7 @@ void ANelia::Interact()
 		/// </summary>
 		if (MainPlayerController->UserInterface != nullptr && (MainPlayerController->UserInterface->CurrentState !=3))
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
+			UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
 			//첫 대화 시작시에는 CurrentState가 0이므로 Interact의 if문을 모두 만족하지 못하고 나오게 되고 
 			MainPlayerController->UserInterface->Interact();
 		}

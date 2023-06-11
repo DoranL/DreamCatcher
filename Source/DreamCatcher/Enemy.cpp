@@ -261,7 +261,8 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 void AEnemy::MoveToTarget(ANelia* Target)
 {
 	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_MoveToTarget);
-	if (AIController)
+
+	if (AIController && !bAttacking)
 	{
 		FAIMoveRequest MoveRequest;
 		//타겟을 목표 액터로 지정
@@ -272,9 +273,9 @@ void AEnemy::MoveToTarget(ANelia* Target)
 		FNavPathSharedPtr NavPath;
 
 		AIController->MoveTo(MoveRequest, &NavPath);
-
 	}
 }
+
 
 //해당 OtherActor가 자신이 아니라 Nelia이고 Nelia를 공격 시 다오는 HitParticle이 있을 경우 Enemy에 부착해둔 TipSocket을 불러오고 
 // TipSocket이 있으면 소켓이 있는 해당 위치에서 HitParticle을 나타냄 
@@ -360,11 +361,11 @@ void AEnemy::Attack()
 				switch (Section)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 0.5f);
+					AnimInstance->Montage_Play(CombatMontage, 1.f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 2.f);
+					AnimInstance->Montage_Play(CombatMontage, 1.f);
 					AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 					break;
 				default:
@@ -404,8 +405,11 @@ void AEnemy::AttackEnd()
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
-	
+	if (GetWorld())
+	{
+		MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
+	}
+
 	if (Health - DamageAmount <= 0.f)
 	{
 		Health -= DamageAmount;
@@ -429,11 +433,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 
 	return DamageAmount;
-}
-
-void AEnemy::AddDreamItem()
-{
-
 }
 
 //상태를 죽은 상태로 두고 DeathMontage에서 애니메이션을 실행 앞에서 설정해둔 Collision과 Capsule Component를 모두 지워준다.

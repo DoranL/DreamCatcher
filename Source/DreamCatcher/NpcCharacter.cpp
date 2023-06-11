@@ -15,7 +15,6 @@ ANpcCharacter::ANpcCharacter()
 void ANpcCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -29,6 +28,5 @@ void ANpcCharacter::Tick(float DeltaTime)
 void ANpcCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 

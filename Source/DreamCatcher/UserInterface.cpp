@@ -6,10 +6,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "MainPlayerController.h"
 #include "Nelia.h"
+#include "NpcCharacter.h"
 
 void UUserInterface::BeginPlay()
 {
-   
 }
 
 //해당 SetMessage와 SetCharacterName을 실직적으로 호출한 부분은 없음 
@@ -43,7 +43,7 @@ void UUserInterface::AnimateMessage(const FString& Text)
 {
 	CurrentState = 1;
 
-	InitialMessage = Text;
+    InitialMessage = Text.Replace(TEXT("\n"), TEXT("\n"));
 
 	OutputMessage = "";
 

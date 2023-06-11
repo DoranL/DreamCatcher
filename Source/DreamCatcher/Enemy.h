@@ -166,9 +166,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
 
-	UFUNCTION(BlueprintCallable)
-	void AddDreamItem();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bAttacking;
 
@@ -186,6 +183,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();
 
+	UFUNCTION(BlueprintCallable)
 	bool Alive();
 
 	void Disappear();

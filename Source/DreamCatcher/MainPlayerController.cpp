@@ -26,6 +26,20 @@ void AMainPlayerController::BeginPlay()
 	HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
 	//WD_Main = CreateWidget <UUserWidget > (this, WD_MainAsset);
 
+	//if (WStartHud)
+	//{
+	//	StartHud = CreateWidget<UUserWidget>(this, WStartHud);
+	//	if (StartHud)
+	//	{
+	//		UE_LOG(LogTemp, Log, TEXT("IF WStartHud"));
+
+	//		StartHud->AddToViewport();
+	//		StartHud->SetVisibility(ESlateVisibility::Hidden);
+	//	}
+	//	//FVector2D Alignment(0.f, 0.f);
+	//	//StartHud->SetAlignmentInViewport(Alignment);
+	//}
+
 	if (HUDOverlay)
 	{
 		HUDOverlay->AddToViewport();
@@ -34,12 +48,9 @@ void AMainPlayerController::BeginPlay()
 
 	if (WEnemyHealthBar)
 	{
-
 		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
 		if (EnemyHealthBar)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Wenemy healthbar if"));
-
 			EnemyHealthBar->AddToViewport();
 			EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 		}
@@ -54,6 +65,16 @@ void AMainPlayerController::BeginPlay()
 		{
 			DiedHUD->AddToViewport();
 			DiedHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	if (WHintHUD)
+	{
+		HintHUD = CreateWidget<UUserWidget>(this, WHintHUD);
+		if (HintHUD)
+		{
+			HintHUD->AddToViewport();
+			HintHUD->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 
@@ -106,8 +127,6 @@ void AMainPlayerController::DisplayEnemyHealthBar()
 {
 	if (EnemyHealthBar)
 	{
-		UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBar"));
-
 		bEnemyHealthBarVisible = true;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -117,8 +136,6 @@ void AMainPlayerController::RemoveEnemyHealthBar()
 {
 	if (EnemyHealthBar)
 	{
-		UE_LOG(LogTemp, Log, TEXT("enemy healthbar hidden"));
-
 		bEnemyHealthBarVisible = false;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 	}
@@ -224,7 +241,6 @@ int AMainPlayerController::CheckInputKey()
 	
 	return checkPressKey;
 }
-
 //int AMainPlayerController::CheckInputKeyTime()
 //{
 //

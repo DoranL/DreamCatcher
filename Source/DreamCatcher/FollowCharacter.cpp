@@ -3,7 +3,7 @@
 
 #include "FollowCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "FollwerAnimInstance.h"
+#include "FollowerAnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/SphereComponent.h"
 #include "AIController.h"
@@ -18,11 +18,18 @@
 #include "MainPlayerController.h"
 #include "TimerManager.h"
 
-//// Sets default values
+
 AFollowCharacter::AFollowCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	static ConstructorHelpers::FObjectFinder<UBlueprint> ProjectileBlueprint(TEXT("Blueprint'/Game/Blueprints/Projectile_BP.Projectile_BP'"));
+
+	if (ProjectileBlueprint.Object)
+	{
+		Projectile = (UClass*)ProjectileBlueprint.Object->GeneratedClass;
+	}
 
 	//AgroSphere은 Rampage의 Capsule Component에 부착되어 있는 자식 컴포넌트로 반지름 600.f는 범위를 나타내며 이 범위 안에 Nelia가 있을 경우 추적을 시작한다.
 	AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroShere"));
@@ -114,6 +121,7 @@ void AFollowCharacter::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedC
 		if (Nelia)
 		{
 			MoveToTarget(Nelia);
+			UE_LOG(LogTemp, Warning, TEXT("ing ing check"));
 		}
 	}
 }
@@ -158,6 +166,8 @@ void AFollowCharacter::CombatSphereOnOverlapBegin(UPrimitiveComponent* Overlappe
 
 			CombatTarget = Nelia;
 			bOverlappingCombatSphere = true;
+			SpawnProjectile();
+
 			Attack();
 		}
 	}
@@ -279,4 +289,17 @@ void AFollowCharacter::AttackEnd()
 void AFollowCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void AFollowCharacter::SpawnProjectile()
+{
+	if (Projectile)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		FRotator SpawnRotation = GetActorRotation();
+		FVector SpawnLocation = GetActorLocation();
+
+		GetWorld()->SpawnActor<AActor>(Projectile, SpawnLocation, SpawnRotation, SpawnParams);
+	}
 }

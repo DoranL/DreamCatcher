@@ -14,4 +14,7 @@ class DREAMCATCHER_API UFollowerAnimInstance : public UMainAnimInstance
 {
 	GENERATED_BODY()
 	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pet")
+		float Speed;
 };

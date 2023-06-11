@@ -244,7 +244,6 @@ public:
 
 	bool bPickup;
 	void PickupPress();
-	void PickupReleas();
 
 	bool bESCDown;
 	void ESCDown();
@@ -320,7 +319,6 @@ public:
 
 	class UMainAnimInstance* MainAnimInstance;
 
-	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
 
 	UFUNCTION(BlueprintCallable)
@@ -351,4 +349,17 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	bool bCanUseDialogue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float DeathDelay;
+
+private:
+	/*UFUNCTION(BlueprintCallable)
+	void Revive();*/
+
+	UFUNCTION(BlueprintCallable)
+	void ReviveEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void Respawn();
 };

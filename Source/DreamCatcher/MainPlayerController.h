@@ -33,6 +33,9 @@ public:
 	UUserWidget* HUDOverlay;
 
 	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> WStartHud;*/
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> WD_MainAsset;*/
 
 	///** Variable to hold the widget after creating it */
@@ -51,14 +54,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WDiedHUD;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WHintHUD;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* PauseMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* DiedHUD;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* HintHUD;
+
 	bool bPauseMenuVisible;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	bool bDialogueVisible;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category ="HUD")
@@ -92,7 +102,7 @@ public:
 
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
-
+	 
 	FVector EnemyLocation;
 
 	//스킬 사용

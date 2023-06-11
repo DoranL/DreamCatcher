@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "FollowCharacter.generated.h"
 
+
 UENUM(BlueprintType)
 enum class EArcherMovementStatus :uint8
 {
@@ -80,10 +81,17 @@ public:
 	FVector NeliaLocation;
 
 	FRotator GetLookAtRotationYaw(FVector Target);
+
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<class AActor> Projectile;
+
+	UFUNCTION(BlueprintCallable)
+		void SpawnProjectile();
+
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -111,10 +119,10 @@ public:
 		bool bAttacking;
 
 	UFUNCTION(BlueprintCallable)
-	void  Attack();
+		void  Attack();
 
 	UFUNCTION(BlueprintCallable)
-	void AttackEnd();
+		void AttackEnd();
 
 	UFUNCTION(BlueprintCallable)
 		void ActivateCollision();
