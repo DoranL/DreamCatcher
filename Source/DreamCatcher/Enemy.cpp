@@ -26,12 +26,17 @@ AEnemy::AEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 
 	static ConstructorHelpers::FObjectFinder<UBlueprint> ExpItem(TEXT("Blueprint'/Game/Blueprints/Dream_BP.Dream_BP'"));
+	static ConstructorHelpers::FObjectFinder<UBlueprint> ShootBP(TEXT("Blueprint'/Game/Enemy/Enemy1Stage/Boss/Attack_BP/ShootBase.ShootBase'"));
 
 	if (ExpItem.Object)
 	{
 		ExpBlueprint = (UClass*)ExpItem.Object->GeneratedClass;
 	}
 
+	if (ShootBP.Object)
+	{
+		ShootBlueprint = (UClass*)ShootBP.Object->GeneratedClass;
+	}
 	//AgroSphere은 Rampage의 Capsule Component에 부착되어 있는 자식 컴포넌트로 반지름 600.f는 범위를 나타내며 이 범위 안에 Nelia가 있을 경우 추적을 시작한다.
 	AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroShere"));
 	AgroSphere->SetupAttachment(GetRootComponent());
@@ -59,8 +64,8 @@ AEnemy::AEnemy()
 	MaxHealth = 100.f;
 	Damage = 10.f;
 
-	AttackMinTime = 0.5f;
-	AttackMaxTime = 1.f;
+	AttackMinTime = 0.3f;
+	AttackMaxTime = 0.8f;
 
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
@@ -68,21 +73,18 @@ AEnemy::AEnemy()
 
 	bHasValidTarget = false;
 
-	InterpSpeed = 15.f;
+	InterpSpeed = 25.f;
 	bInterpToNelia = false;
-
 }
 
 // Called when the game starts or when spawned
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//Enemy 컨트롤러를 받아 넣어주고 각각 범위 내에 감지될 경우 해당 함수를 호출 ex) CombatCollisionLeft에 감지될 경우 CombatOnOverlapBegin() 호출
-	AIController = Cast<AAIController>(GetController());
-	Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-
 	
+	Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
+
 	//EnemyHUD = CreateWidget<UUserWidget>(this, HUDAsset);
 
 	AgroSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::AgroSphereOnOverlapBegin);
@@ -120,25 +122,31 @@ void AEnemy::BeginPlay()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (!AIController)
+	{
+		AIController = Cast<AAIController>(GetController());
+	}
+	
 	if (bInterpToNelia && CombatTarget)
 	{
+		//UE_LOG(LogTemp, Warning, TEXT("Interptonelia and Combattarget"));
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
 
 		SetActorRotation(InterpRotation);
+		//UE_LOG(LogTemp, Warning, TEXT("TICK IN SETACTORLOCATION"));
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	if (CombatTarget)
+	/*if (CombatTarget)
 	{
 		CombatTargetLocation = CombatTarget->GetActorLocation();
 		if (AIController)
 		{
 			NeliaLocation = CombatTargetLocation;
 		}
-	}
+	}*/
 }
 
 FRotator AEnemy::GetLookAtRotationYaw(FVector Target)
@@ -166,11 +174,14 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 	{
 		ANelia* Target = Cast<ANelia>(OtherActor);
 
+		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
 		if (Target)
 		{
 			MoveToTarget(Target);
 			bOverlappingAgroSphere = true;
+			MainPlayerController->DisplayEnemyHealthBar();
 		}
+
 	}
 }
 
@@ -212,8 +223,10 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 	if (OtherActor && Alive())
 	{
 		ANelia* Target = Cast<ANelia>(OtherActor);
-		
-		if (Target)
+		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+
+		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
+		if (Target && !bAttacking)
 		{
 			bHasValidTarget = true;
 
@@ -224,7 +237,8 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 
 			CombatTarget = Target;
 			bOverlappingCombatSphere = true;
-			Attack();
+			
+			GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 		}
 	}
 }
@@ -249,7 +263,7 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 			if (Target->MainPlayerController)
 			{
 				USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
-				if (NeliaMesh) Target->MainPlayerController->RemoveEnemyHealthBar();
+				if (NeliaMesh) Target->MainPlayerController->DisplayEnemyHealthBar();
 			}
 
 			GetWorldTimerManager().ClearTimer(AttackTimer);
@@ -257,7 +271,7 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 	}
 }
 
-//Nelia에게 이동하도록 타겟으로 잡고 만약 AIController가 있으면 ///////////////////////////////////////////////////////////////////////////////
+//Nelia에게 이동하도록 타겟으로 잡고 만약 AIController가 있으면 문제점: navpath를 통해 moveto를 설정하기 때문에 플레이어가 공중에 있는 경우 추적이 불가능
 void AEnemy::MoveToTarget(ANelia* Target)
 {
 	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_MoveToTarget);
@@ -268,7 +282,7 @@ void AEnemy::MoveToTarget(ANelia* Target)
 		//타겟을 목표 액터로 지정
 		MoveRequest.SetGoalActor(Target);
 		//이 원 내에 있을 때 타겟으로 인식
-		MoveRequest.SetAcceptanceRadius(10.0f);
+		MoveRequest.SetAcceptanceRadius(20.0f);
 
 		FNavPathSharedPtr NavPath;
 
@@ -284,7 +298,6 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 	if (OtherActor)
 	{
 		ANelia* Target = Cast<ANelia>(OtherActor);
-
 		if (Target)
 		{
 			if (Target->HitParticles)
@@ -338,11 +351,15 @@ void AEnemy::DeactivateCollision()
 
 //Enemy가 죽지 않았고 유효 타겟이 있을 경우 만약 AIController가 있을 경우 이동을 멈추고 상태를 공격 상태로 지정한다. (이동을 하면서 공격하는 것을 방지하기 위함
 //만약 공격 중인 상태가 아니라면 공격 상태를 확인하는 bool 변수를 true로 두고 Enemy의 AnimInstance를 가져오고 Switch 문을 통해 공격 모션을 Attack, Attack1, JumpAttack 순서대로 실행하도록 설정
-//한 CombatMontage에 설정해둔 3가지 공격 모션이 조건 만족 시 JumpToSection을 통해 이름이 같은 해당 섹션으로 점프되어 실행된다.
+//2023-06-27 수정사항 distanctocombat 및 switch 입력 값도 DistanceToCombatInt로 수정
 void AEnemy::Attack()
 {
+	/*DistanceToCombat = FVector::Distance(this->GetActorLocation(), Nelia->GetActorLocation());
+	int DistanceToCombatInt = FMath::TruncToInt(DistanceToCombat % 600);*/
 	if (Alive() && bHasValidTarget)
 	{
+		UWorld* world = GetWorld();
+
 		if (AIController)
 		{
 			AIController->StopMovement();
@@ -350,27 +367,40 @@ void AEnemy::Attack()
 		}
 
 		if (!bAttacking)
-		{
+		{		
 			bAttacking = true;
 			SetInterpToNelia(true);
 
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
+			if (AnimInstance && CombatMontage)
 			{
 				int32 Section = EnemyAttackCount;
+				//2023-6-24 랜덤으로 하려면 아래 SECTIOIN을 변경해야함
+				// int AttackNum = FMath::RandRange(1, 5);
 				switch (Section)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 1.f);
+					AnimInstance->Montage_Play(CombatMontage, 1.2f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 1.f);
+					AnimInstance->Montage_Play(CombatMontage, 1.2f);
 					AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 					break;
+				
 				default:
+					if (world)
+					{
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.Owner = this;
+						FRotator rotator;
+						FVector SpawnLocation = GetActorLocation();
+
+						world->SpawnActor<AActor>(ShootBlueprint, SpawnLocation, rotator, SpawnParams);
+					}
 					break;
 				}
+				
 				EnemyAttackCount++;
 				if (EnemyAttackCount > 1)
 				{
@@ -389,14 +419,16 @@ void AEnemy::AttackEnd()
 	if (bOverlappingCombatSphere)
 	{
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+
+		//2023-08-02 타이머 로그 
+		//UE_LOG(LogTemp, Warning, TEXT("Timer, %f"), AttackTime);
 		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
 
-	else if (bOverlappingAgroSphere)
+	//!bAttacking 조건 추가 2023-08-02 수정
+	else if (bOverlappingAgroSphere && !bAttacking)
 	{
-		
-			MoveToTarget(Nelia);
-		
+		MoveToTarget(Nelia);
 	}
 }
 
@@ -405,38 +437,47 @@ void AEnemy::AttackEnd()
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	UE_LOG(LogTemp, Warning, TEXT("EnemyHey"));
+	//2023-07-23 수정사항
+	//MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
+
 	if (GetWorld())
 	{
 		MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
 	}
 
-	if (Health - DamageAmount <= 0.f)
+	//2023-08-08 수정 targeting 표시가 없을 때라도 데미지가 들어가게 하고 싶음 
+	if (Nelia->bTargeting || Nelia->bHasCombatTarget)
 	{
-		Health -= DamageAmount;
-		Die(DamageCauser);
-		bTakeDamage = false;
-		//MainPlayerController->RemoveEnemyHealthBar();
-	}
-	else
-	{
-		bTakeDamage = true;
-		
-		MainPlayerController->DisplayEnemyHealthBar();
-		//UE_LOG(LogTemp, Log, TEXT("DisplayEnemyHealthBarPlease"));
-
-		Health -= DamageAmount;
-		if (AnimInstance)
+		if (Health - DamageAmount <= 0.f)
 		{
-			AnimInstance->Montage_Play(CombatMontage, 1.f);
-			AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+			Health -= DamageAmount;
+			Die(DamageCauser);
+			bTakeDamage = false;
+			//MainPlayerController->RemoveEnemyHealthBar();
+
+		}
+		else
+		{
+			bTakeDamage = true;
+
+			MainPlayerController->DisplayEnemyHealthBar();
+
+			Health -= DamageAmount;
+			//UE_LOG(LogTemp, Warning, TEXT("IS OKAY"));			
+			if (AnimInstance)
+			{
+				AnimInstance->Montage_Play(CombatMontage, 1.f);
+				AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+			}
 		}
 	}
 
 	return DamageAmount;
 }
 
-//상태를 죽은 상태로 두고 DeathMontage에서 애니메이션을 실행 앞에서 설정해둔 Collision과 Capsule Component를 모두 지워준다.
-//이후 Nelia의 공격 대상을 업데이트를 하여 새로운 대상을 공격할 수 있도록 해줌.
+//Damage Causer는 Enemy에게 공격을 가하는 플레이어를 의미
+//TakeDamage에서 체력 이상의 데미지를 받아 죽게되면 공격을 가한 대상을 Die 함수에 전달하여 그 대상이 맞는 경우 타겟으로 지정한다.
 void AEnemy::Die(AActor* Causer)
 {
 	FTimerHandle WaitHandle;

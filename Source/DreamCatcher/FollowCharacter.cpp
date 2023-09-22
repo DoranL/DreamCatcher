@@ -62,7 +62,7 @@ AFollowCharacter::AFollowCharacter()
 	bHasValidTarget = false;
 
 	InterpSpeed = 15.f;
-	bInterpToNelia = false;
+	bInterpToEnemy = false;
 }
 void AFollowCharacter::BeginPlay()
 {
@@ -81,7 +81,7 @@ void AFollowCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bInterpToNelia && CombatTarget)
+	if (bInterpToEnemy && CombatTarget)
 	{
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
@@ -96,7 +96,7 @@ void AFollowCharacter::Tick(float DeltaTime)
 		CombatTargetLocation = CombatTarget->GetActorLocation();
 		if (AIController)
 		{
-			NeliaLocation = CombatTargetLocation;
+			EnemyLocation = CombatTargetLocation;
 		}
 	}
 }
@@ -108,9 +108,9 @@ FRotator AFollowCharacter::GetLookAtRotationYaw(FVector Target)
 	return LookAtRotationYaw;
 }
 
-void AFollowCharacter::SetInterpToNelia(bool Interp)
+void AFollowCharacter::SetInterpToEnemy(bool Interp)
 {
-	bInterpToNelia = Interp;
+	bInterpToEnemy = Interp;
 }
 
 void AFollowCharacter::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -133,6 +133,8 @@ void AFollowCharacter::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedCom
 	if (OtherActor)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+
 		if (Nelia)
 		{
 			bHasValidTarget = false;
@@ -155,20 +157,23 @@ void AFollowCharacter::CombatSphereOnOverlapBegin(UPrimitiveComponent* Overlappe
 {
 	if (OtherActor)
 	{
-		ANelia* Nelia = Cast<ANelia>(OtherActor);
-		if (Nelia)
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		ANelia* Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
+		//2023-07-18 아래 조건문에 &&Nelia 추가함 
+		if (bInterpToEnemy && Nelia)
 		{
 			bHasValidTarget = true;
 
+			//2023-07-28 수정 nelia를 combattarget으로 하는 거라서 필요없음
 			Nelia->SetHasCombatTarget(true);
 
 			Nelia->UpdateCombatTarget();
 
-			CombatTarget = Nelia;
+			CombatTarget = Enemy;
 			bOverlappingCombatSphere = true;
 			SpawnProjectile();
-
-			Attack();
+		
+			//Attack();
 		}
 	}
 }
@@ -177,6 +182,7 @@ void AFollowCharacter::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedC
 	if (OtherActor && OtherComp)
 	{
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
+		//AEnemy* enemy = Cast<AEnemy>(OtherActor);
 		if (Nelia)
 		{
 			bOverlappingCombatSphere = false;
@@ -232,59 +238,59 @@ void AFollowCharacter::MoveToTarget(ANelia* Target)
 	}
 }
 
-void AFollowCharacter::Attack()
-{
-	if (bHasValidTarget)
-	{
-		if (AIController)
-		{
-			AIController->StopMovement();
-			SetEnemyMovementStatus(EArcherMovementStatus::EMS_Attacking);
-		}
-
-		if (!bAttacking)
-		{
-			bAttacking = true;
-			SetInterpToNelia(true);
-
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
-			{
-				int32 Section = EnemyAttackCount;
-				switch (Section)
-				{
-				case 0:
-					AnimInstance->Montage_Play(AttackMontage, 1.f);
-					AnimInstance->Montage_JumpToSection(FName("Attack"), AttackMontage);
-					break;
-				case 1:
-					AnimInstance->Montage_Play(AttackMontage, 1.f);
-					AnimInstance->Montage_JumpToSection(FName("Attack2"), AttackMontage);
-					break;
-				default:
-					break;
-				}
-				EnemyAttackCount++;
-				if (EnemyAttackCount > 1)
-				{
-					EnemyAttackCount = 0;
-				}
-			}
-		}
-	}
-}
-
-//공격 모션 간격을 랜덤으로 설정해준는 부분 play 시 공격 애니메이션 간격이 실행할 때마다 다른 것을 알 수 있다.
-void AFollowCharacter::AttackEnd()
-{
-	bAttacking = false;
-	SetInterpToNelia(false);
-	if (bOverlappingCombatSphere)
-	{
-		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
-		GetWorldTimerManager().SetTimer(AttackTimer, this, &AFollowCharacter::Attack, AttackTime);
-	}
-}
+//void AFollowCharacter::Attack()
+//{
+//	if (bHasValidTarget)
+//	{
+//		if (AIController)
+//		{
+//			AIController->StopMovement();
+//			SetEnemyMovementStatus(EArcherMovementStatus::EMS_Attacking);
+//		}
+//
+//		if (!bAttacking)
+//		{
+//			bAttacking = true;
+//			SetInterpToEnemy(true);
+//
+//			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+//			if (AnimInstance)
+//			{
+//				int32 Section = EnemyAttackCount;
+//				switch (Section)
+//				{
+//				case 0:
+//					AnimInstance->Montage_Play(AttackMontage, 1.f);
+//					AnimInstance->Montage_JumpToSection(FName("Attack"), AttackMontage);
+//					break;
+//				case 1:
+//					AnimInstance->Montage_Play(AttackMontage, 1.f);
+//					AnimInstance->Montage_JumpToSection(FName("Attack2"), AttackMontage);
+//					break;
+//				default:
+//					break;
+//				}
+//				EnemyAttackCount++;
+//				if (EnemyAttackCount > 1)
+//				{
+//					EnemyAttackCount = 0;
+//				}
+//			}
+//		}
+//	}
+//}
+//
+////공격 모션 간격을 랜덤으로 설정해준는 부분 play 시 공격 애니메이션 간격이 실행할 때마다 다른 것을 알 수 있다.
+//void AFollowCharacter::AttackEnd()
+//{
+//	bAttacking = false;
+//	SetInterpToEnemy(false);
+//	if (bOverlappingCombatSphere)
+//	{
+//		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+//		GetWorldTimerManager().SetTimer(AttackTimer, this, &AFollowCharacter::Attack, AttackTime);
+//	}
+//}
 
 void AFollowCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

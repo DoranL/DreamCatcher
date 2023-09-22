@@ -13,7 +13,7 @@ UCLASS()
 class DREAMCATCHER_API UEnemyAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
-
+	
 public:
 
 	virtual void NativeInitializeAnimation() override;

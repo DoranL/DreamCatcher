@@ -16,8 +16,6 @@ ALevelTransitionVolume::ALevelTransitionVolume()
 
 	Billboard = CreateDefaultSubobject<UBillboardComponent>(TEXT("Billboard"));
 	Billboard->SetupAttachment(GetRootComponent());
-
-	TransitionLevelName = "Map_Main";
 }
 
 // Called when the game starts or when spawned

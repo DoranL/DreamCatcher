@@ -1,4 +1,3 @@
-#pragma once
 #include "CoreMinimal.h"                   //언리얼 오브젝트가 동작할 수 있는 최소 기능만 선언된 헤더 파일 ex)Templates , Generic, Containers, Math 포함
 #include "GameFramework/Character.h"
 #include "Nelia.generated.h"
@@ -9,6 +8,7 @@ enum class EMovementStatus : uint8
 	EMS_Normal		 UMETA(DisplayName = "Normal"),
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
+	EMS_Block		 UMETA(DisplayName = "Block"),
 
 	EMS_MAX          UMETA(DisplayName = "Max"),
 };
@@ -37,18 +37,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
 	TSubclassOf<class AItemStorage> WeaponStorage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	bool bHasCombatTarget;
-
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
-	FVector CombatTargetLocation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
-	class AMainPlayerController* MainPlayerController;
-
-	/*UPROPERTY(BlueprintReadWrite, Category = "Enemy")
+	//2023-6-24 
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class AEnemy* Enemy;*/
 
 	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 UParticleSystem 클래스형 변수인 HitParticles 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 파티클
@@ -80,9 +73,29 @@ public:
 	float InterpSpeed;
 	bool bInterpToEnemy;
 	void SetInterpToEnemy(bool Interp);
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	class USphereComponent* CombatSphere;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bOverlappingCombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	class AEnemy* CombatTarget;
+		
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
+	FVector CombatTargetLocation;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TArray<AEnemy*> Targets;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bHasCombatTarget;			  
+
+	int targetIndex;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+	class AMainPlayerController* MainPlayerController;
 
 	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 
@@ -171,6 +184,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 RandomInt;
 
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	UFUNCTION(BlueprintCallable)
@@ -198,6 +212,9 @@ protected:
 	 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
 	float TraceDistance;
+	 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WallClimb")
+	float TraceDistanceEnemy;
 
 public:	
 	// Called every frame
@@ -207,8 +224,9 @@ public:
 
 	/** called for forwards/backwards input*/
 	
+	UFUNCTION(BlueprintCallable)
 	void MoveForward(float Value);
-
+	 
 	/** called for side to side input*/
 	void MoveRight(float Value);
 
@@ -249,8 +267,11 @@ public:
 	void ESCDown();
 	void ESCUp();
 
+	UFUNCTION(BlueprintCallable)
 	void Block();
 	void BlockEnd();
+
+	bool isBlock;
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
@@ -283,7 +304,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Attack();
-
+	
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
 
@@ -308,7 +329,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bRoll;
 
-	void Roll();
+	void Rolls(float Value);
 	
 	//블루프린트에서 호출할 수 있도록
 	UFUNCTION(BlueprintCallable)
@@ -353,6 +374,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float DeathDelay;
 
+	bool bTargeting;
+
 private:
 	/*UFUNCTION(BlueprintCallable)
 	void Revive();*/
@@ -362,4 +385,18 @@ private:
 
 	UFUNCTION(BlueprintCallable)
 	void Respawn();
+
+	UFUNCTION(BlueprintCallable)
+	void SprintAttack();
+
+	UFUNCTION()
+	virtual void CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	bool bTabKeyDown;
+
+	void Targeting();
+	void CancelTargeting();
 };

@@ -24,6 +24,19 @@ void AMainPlayerController::BeginPlay()
 	bDialogueVisible = false;
 
 	HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
+
+	if (WTargetPointer)
+	{
+		TargetPointer = CreateWidget<UUserWidget>(this, WTargetPointer);
+		if (TargetPointer)
+		{
+			TargetPointer->AddToViewport();
+			TargetPointer->SetVisibility(ESlateVisibility::Hidden);
+		}
+
+		FVector2D Alignment(0.f, 0.f);
+		TargetPointer->SetAlignmentInViewport(Alignment);
+	}
 	//WD_Main = CreateWidget <UUserWidget > (this, WD_MainAsset);
 
 	//if (WStartHud)
@@ -107,7 +120,7 @@ void AMainPlayerController::Tick(float DeltaTime)
 		FVector2D PositionInViewport;
 		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
 
-		PositionInViewport.Y -= 160.f;
+		PositionInViewport.Y -= 100.f;
 		PositionInViewport.X -= 100.f;
 		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
 
@@ -115,6 +128,19 @@ void AMainPlayerController::Tick(float DeltaTime)
 
 		//EnemyHealthBar->SetPositionInViewport(PositionInViewport);
 		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);
+	}
+
+	if (TargetPointer)
+	{
+		FVector2D PositionInViewport;
+		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
+		PositionInViewport.Y -= 60.f;
+		PositionInViewport.X -= 70.f;
+
+		//FVector2D SizeInViewport = FVector2D(10.f, 10.f);
+
+		TargetPointer->SetPositionInViewport(PositionInViewport);
+		//TargetArrow->SetDesiredSizeInViewport(SizeInViewport);
 	}
 }
 
@@ -245,3 +271,21 @@ int AMainPlayerController::CheckInputKey()
 //{
 //
 //}
+
+void AMainPlayerController::DisplayTargetPointer()
+{
+	if (TargetPointer)
+	{
+		bTargetPointerVisible = true;
+		TargetPointer->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void AMainPlayerController::RemoveTargetPointer()
+{
+	if (TargetPointer)
+	{
+		bTargetPointerVisible = false;
+		TargetPointer->SetVisibility(ESlateVisibility::Hidden);
+	}
+}

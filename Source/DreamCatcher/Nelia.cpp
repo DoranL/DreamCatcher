@@ -1,4 +1,4 @@
- // Fill out your copyright notice in the Description page of Project Settings.
+//Fill out your copyright notice in the Description page of Project Settings.
 #include "Nelia.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -38,24 +38,32 @@ ANelia::ANelia()
 
 	//CameraBoom은 카메라와 플레이어를 이어주고 있는 것 처럼 보이는 빨간선 부모 컴포넌트인 Nelia의 Capsule Component에 부착되어 있고 그 사이 간격은 400.f
 	//bUsePawnControllerRotation은 플레이어를 기준으로 도는 것을 가능하도록 하는 변수
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));   
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->TargetArmLength = 400.f;							
-	CameraBoom->bUsePawnControlRotation = true;						
+	CameraBoom->TargetArmLength = 400.f;
+	CameraBoom->bUsePawnControlRotation = true;
 
 	//Nelia의 캡슐 크기를 c++울 통해 조정 가능
-	GetCapsuleComponent()->SetCapsuleSize(20.f, 76.f);				
+	GetCapsuleComponent()->SetCapsuleSize(20.f, 76.f);
 
 
 	//FollowCamera를 카메라붐 끝 부분에 부착. FollowCamera는 이미 CameraBoom이 좌우로 돌기 때문에 같이 돌아갈 필요가 없어 false로 둠 단 CameraBoomd bUsePawnControlRotation을 false로두고
 	//FollowCamera에서 true로 두면 Nelia를 기준으로 회전하지 않고 카메라를 기준으로 회전하기 때문에 캐릭터로부터 400.f 위치에서 홀로 돌아가게 됨
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));		 
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	CombatSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatSphere"));
+	CombatSphere->SetupAttachment(GetRootComponent());
+	CombatSphere->InitSphereRadius(600.f);
+
+	bOverlappingCombatSphere = false;
+	bHasCombatTarget = false;
+	targetIndex = 0;
+
 	//키 입력 시 1초동안 65씩 회전 BaseTurnRate는 프로젝트 세팅 입력창에서 볼 수 있듯이 좌우 회전 비율이고 BaseLookupRate는 상하 회전 비율이다.
-	BaseTurnRate = 65.f;
-	BaseLookUpRate = 65.f;
+	//BaseTurnRate = 65.f;
+	//BaseLookUpRate = 65.f;
 
 	//카메라와 캐릭터가 동시 회전하는 걸 막는 역할 이렇게 설정하지 않으면 회전 시 캐릭터의 앞 모습을 절대 볼 수 없음.
 	//Let that just affect the camera
@@ -65,7 +73,7 @@ ANelia::ANelia()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true; //bOrientRotationToMovement는 자동으로 캐릭터의 이동방향에 맞춰, 회전 보간을 해준다.
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.f, 0.0f); //키 입력 시 540씩 회전함
-	GetCharacterMovement()->JumpZVelocity = 650.f; //점프하는 힘
+	GetCharacterMovement()->JumpZVelocity = 850.f; //점프하는 힘
 	GetCharacterMovement()->AirControl = 0.2f; //중력의 힘
 	
 	MaxHealth = 100.f;
@@ -108,6 +116,8 @@ ANelia::ANelia()
 	isClimb = false;
 	onClimbLedge = false;
 	isClimbUp = false;
+
+	isBlock = false;
 	
 	checkPointCount = 0;
 
@@ -115,12 +125,19 @@ ANelia::ANelia()
 	wallUpDown = 100.f;
 
 	DeathDelay = 3.f;
+
+	bTabKeyDown = false;
+	bTargeting = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
 void ANelia::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &ANelia::CombatSphereOnOverlapBegin);
+	CombatSphere->OnComponentEndOverlap.AddDynamic(this, &ANelia::CombatSphereOnOverlapEnd);
+
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
 
@@ -152,8 +169,8 @@ void ANelia::Jump()
 
 		if (isClimb)
 		{
-			LaunchVelocity.X = GetActorForwardVector().X * -500.f;
-			LaunchVelocity.Y = GetActorForwardVector().Y * -500.f;
+			LaunchVelocity.X = GetActorForwardVector().X * -400.f;
+			LaunchVelocity.Y = GetActorForwardVector().Y * -400.f;
 			LaunchVelocity.Z = 0.f;
 
 			//space bar 입력 시 캐릭터를 일정 속도로 발사시킴
@@ -163,8 +180,8 @@ void ANelia::Jump()
 
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 			GetCharacterMovement()->bOrientRotationToMovement = true; 
-			//수정이
-			ChangeModeToFly();
+			//2023-06-27 주석처리함
+			//ChangeModeToFly();
 		}
 	} 
 }
@@ -204,17 +221,17 @@ void ANelia::CanClimb()
 		FVector Start = GetActorLocation();
 		//TraceDistance는 시작할 때 40.f을 대입
 		FVector End = Start + (GetActorForwardVector() * TraceDistance);
-		FVector arriveEnd = (Start + (GetActorForwardVector())+FVector(0.f, 0.f, 135.f) + (GetActorForwardVector() * TraceDistance));
+		FVector arriveEnd = (Start + (GetActorForwardVector())+FVector(0.f, 0.f, 70.f) + (GetActorForwardVector() * TraceDistance));
 
 		FCollisionQueryParams TraceParams;
 		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
 		bool bArriveHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, arriveEnd, ECC_Visibility, TraceParams);
 		
 		
-		//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
-		//DrawDebugLine(GetWorld(), Start, arriveEnd, FColor::Red, false, 1, 0, 1);
+		/*DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+		DrawDebugLine(GetWorld(), Start, arriveEnd, FColor::Red, false, 1, 0, 1);*/
 
-		if (bHit)
+		if (bHit)																																								
 		{
 			onClimbLedge = bArriveHit;
 
@@ -238,9 +255,6 @@ void ANelia::CanClimb()
 
 		if (isClimb && !onClimbLedge)
 		{
-
-			//UE_LOG(LogTemp, Warning, TEXT("ledge"));
-
 			isClimbUp = true;
 			isClimb = false;
 			AnimInstance->Montage_Play(ClimbTop_Two, 1.2f);
@@ -250,7 +264,6 @@ void ANelia::CanClimb()
 
 			GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
 				{
-					//UE_LOG(LogTemp, Warning, TEXT("6"));
 					isClimbUp = false;
 					GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 					GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -281,7 +294,7 @@ void ANelia::Tick(float DeltaTime)
 	{
 	
 	case EStaminaStatus::ESS_Normal:
-		if (bShiftKeyDown)
+		if (bShiftKeyDown && !isClimb)
 		{
 			if (Stamina - DeltaStamina <= MinSprintStamina)
 			{
@@ -425,9 +438,11 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("ESC", IE_Released, this, &ANelia::ESCUp);
 
 	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ANelia::Block);
-	PlayerInputComponent->BindAction("Block", IE_Released, this, &ANelia::BlockEnd);
 
-	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &ANelia::Roll);
+	PlayerInputComponent->BindAction("SprintAttack", IE_Pressed, this, &ANelia::SprintAttack);
+	//PlayerInputComponent->BindAction("Block", IE_Released, this, &ANelia::BlockEnd);
+
+	PlayerInputComponent->BindAxis("Rolls", this, &ANelia::Rolls);
 
 	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ANelia::PickupPress);
 
@@ -442,7 +457,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("SkillTwo", IE_Pressed, this, &ANelia::Attack);
 	PlayerInputComponent->BindAction("SkillThree", IE_Pressed, this, &ANelia::Attack);
 
-
+	PlayerInputComponent->BindAction("Targeting", IE_Pressed, this, &ANelia::Targeting);
+	PlayerInputComponent->BindAction("CancelTargeting", IE_Pressed, this, &ANelia::CancelTargeting);
 	//.bConsumeInput = false;
 
 	PlayerInputComponent->BindAxis("CameraZoom", this, &ANelia::CameraZoom);
@@ -450,16 +466,64 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
+void ANelia::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor)
+	{
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		if (Enemy)
+		{
+			bOverlappingCombatSphere = true;
+			for (int i = 0; i < Targets.Num(); i++)
+			{
+				if (Enemy == Targets[i]) //already exist
+				{
+					return;
+				}
+			}
+			Targets.Add(Enemy);
+		}
+	}
+}
+
+void ANelia::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor)
+	{
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+		if (Enemy)
+		{
+			for (int i = 0; i < Targets.Num(); i++)
+			{
+				if (Enemy == Targets[i]) //already exist
+				{
+					Targets.Remove(Enemy); //타겟팅 가능 몹 배열에서 제거
+
+				}
+			}
+			if (Targets.Num() == 0)
+			{
+				bOverlappingCombatSphere = false;
+			}
+
+			if (CombatTarget == Enemy)
+			{
+				MainPlayerController->bTargetPointerVisible = false;
+				MainPlayerController->RemoveTargetPointer();
+				CombatTarget = nullptr;
+				bHasCombatTarget = false;
+			}
+		}
+	}
+}
+
 bool ANelia::CanMove(float Value)
 {
-
 	if (MainPlayerController)
 	{
-
 		if ((Value != 0.0f) &&
 			(!bAttacking) &&
 			(MovementStatus != EMovementStatus::EMS_Death)) {
-
 			//일시정지 메뉴가 화면에 떴을 때는 이동하지 못하도록 하는 부분
 			MainPlayerController->bPauseMenuVisible;
 			
@@ -472,7 +536,7 @@ bool ANelia::CanMove(float Value)
 //마우스를 좌우로 움직일 경우 z값이 증가 감소함
 void ANelia::Turn(float Value)
 {
-	if (CanMove(Value))
+	if (CanMove(Value) && !isClimb)
 	{
 		AddControllerYawInput(Value);
 	}
@@ -494,7 +558,7 @@ void ANelia::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if (CanMove(Value) && !isClimb)
+	//if (CanMove(Value))// && !isClimb)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -512,18 +576,11 @@ void ANelia::MoveForward(float Value)
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Z);
 
-		//test->>>> 원래 GetCharacterMovement()->Velocity = FVector(0, 0, 1000.f); 없었음
 		if (Value != 0.0f)
 		{
 			GetCharacterMovement()->Velocity = FVector(0, 0, Value*100.f);
 		}
-		//위에꺼 안되면 아래꺼 
-		//GetCharacterMovement()->Velocity = FVector(0, 0, Value*1000.f);
-
-		//1.0f, -1.f 값이 최대 test 부분
 		AddMovementInput(Direction, wallUpDown);
-
-		//UE_LOG(LogTemp, Warning, TEXT("updown %f"), wallUpDown);
 	}
 }
 //Log_Type 1
@@ -533,7 +590,9 @@ void ANelia::MoveForward(float Value)
 //좌,우 이동 위 MoveForward랑 구현 방식이 같음
 void ANelia::MoveRight(float Value)
 {
-	if (CanMove(Value) && !isClimb)
+	bMovingRight = false;
+
+	//if (CanMove(Value) && !isClimb)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -630,24 +689,29 @@ void ANelia::ESCUp()
 
 void ANelia::Block()
 {
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && !bJump && !isClimb && !bRoll)
 	{
+		//UE_LOG(LogTemp, Warning, TEXT("Blocking in c++"));
+		isBlock = true;
+		SetMovementStatus(EMovementStatus::EMS_Block);
+		
 		bAttacking = true;
 		SetInterpToEnemy(true);
 
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		FTimerHandle WaitHandle;
 
-		if (AnimInstance && BlockMontage)
-		{
-			AnimInstance->Montage_Play(BlockMontage, 1.4f);
-			AnimInstance->Montage_JumpToSection(FName("Parrying"), BlockMontage);
-		}
+		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]() {
+			BlockEnd();
+			}), 3.0f, false);
 	}
 }
 
 //건드림
 void ANelia::BlockEnd()
 {
+	isBlock = false;
+
+	SetMovementStatus(EMovementStatus::EMS_Normal);
 	bAttacking = false;
 }
 
@@ -695,15 +759,17 @@ void ANelia::AddExp()
 //CombatMontage를 1.2배 속도로 애니메이션을 실행하고 CombatMontage의 몽타주 섹션 Death 부분으로 이동
 void ANelia::Die()
 {
-	MainPlayerController = Cast<AMainPlayerController>(GetController());
 	if (MovementStatus == EMovementStatus::EMS_Death) return;
+
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	//MainPlayerController->startplayer ///////////////////// 이거 character spawn 하려고 하던건데 음 startplayer을 어떻게 받아야 할지 모르겠음
 	if (AnimInstance && CombatMontage)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.2f);
-		AnimInstance->Montage_JumpToSection(FName("Death"));	
+		AnimInstance->Montage_JumpToSection(FName("Death"));
+		bAttacking = false;
 	}
 	SetMovementStatus(EMovementStatus::EMS_Death);
 	OnDeath();
@@ -757,7 +823,7 @@ void ANelia::CameraZoom(const float Value)
 //1번 공격만 하도록 구현
 void ANelia::Attack()
 {
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
 	{
 		bAttacking = true;
 		SetInterpToEnemy(true);
@@ -774,31 +840,29 @@ void ANelia::Attack()
 			switch (Section)
 			{
 			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 2.f);
+				AnimInstance->Montage_Play(CombatMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+				AttackMotionCount++;
 				break;
 			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.8f);
+				AnimInstance->Montage_Play(CombatMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
+				AttackMotionCount++;
+
 				break;
 			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.8f);
-				AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
-				break;
-			case 3:
-				AnimInstance->Montage_Play(CombatMontage, 1.8f);
+				AnimInstance->Montage_Play(CombatMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Attack3"), CombatMontage);
+				AttackMotionCount++;
+
 				break;
 			default:
 				break;
 			}
 
-			///////////// 플레이어가 입력한 스킬 키에 따라 스킬을 구현하는 부분 구현해야함 
 			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
 			if (AnimInstance && SkillMontage)
 			{
-				//UE_LOG(LogTemp, Warning, TEXT("pressSkillNum"));
-
 				switch (pressSkillNum)
 				{
 				case 1:
@@ -819,10 +883,8 @@ void ANelia::Attack()
 				}
 			}
 		}
-
 		
-		AttackMotionCount++;
-		if (AttackMotionCount > 3)
+		if (AttackMotionCount > 2)
 		{
 			AttackMotionCount = 0;
 		}
@@ -842,6 +904,80 @@ void ANelia::ResetCombo()
 	bAttacking = false;
 }
 
+void ANelia::SprintAttack()
+{
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
+	{
+		bAttacking = true;
+
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && CombatMontage)
+		{
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
+			AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
+		}
+	}
+}
+
+void ANelia::Targeting() //Targeting using Tap key
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Targeting is Complite?"));
+	if (bOverlappingCombatSphere) //There is a enemy in combatsphere
+	{
+		if (targetIndex >= Targets.Num()) //타겟인덱스가 총 타겟 가능 몹 수 이상이면 다시 0으로 초기화
+		{
+			targetIndex = 0;
+		}
+		//There is already exist targeted enemy, then targetArrow remove
+		if (MainPlayerController->bTargetPointerVisible)
+		{
+			bTargeting = false;
+			MainPlayerController->RemoveTargetPointer();
+		}
+		bHasCombatTarget = true;
+		bTargeting = true;
+		CombatTarget = Targets[targetIndex];
+		//현재 combat target의 이름을 전달하여 출력해줌
+		//UE_LOG(LogTemp, Log, TEXT("%s"), *(CombatTarget->GetName()));
+		targetIndex++;
+
+		MainPlayerController->DisplayTargetPointer();
+	}
+}
+//bOverlappingCombatSphere은 이 구체 범위 내에 enemy가 있을 경우 true로 설정해주었던 bool 변수임 
+//Mainplayercontroller에서 선언한 bTargetPointerVisible을 통해서 현재 타겟으로 지정된 enemy에 대한 타겟 widget이 
+//보이거나 보이지 않는 상태로 설정이 가능 기존에 켜져 있을 때 누른 경우에는 RemoveTargetPointer을 통해 타겟 widget을 꺼주고 이후
+//MainPlayerController->DisplayTargetPointer(); 통해 새로 다시 visible로 설정을 해줍니다.
+
+void ANelia::CancelTargeting()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Targeting unComplite"));
+	
+	bTabKeyDown = true;
+	if (ActiveOverlappingItem && !EquippedWeapon)
+	{
+		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+		if (Weapon)
+		{
+			Weapon->Equip(this);
+			SetActiveOverlappingItem(nullptr);
+		}
+	}
+
+	// Targeting Off
+	if (CombatTarget)
+	{
+		bTargeting = false;
+		if (MainPlayerController->bTargetPointerVisible)
+		{
+			MainPlayerController->RemoveTargetPointer();
+		}
+		CombatTarget = nullptr;
+		bHasCombatTarget = false;
+	}
+}
+
 void ANelia::SaveComboAttack()
 {
 	if (saveAttack)
@@ -851,12 +987,12 @@ void ANelia::SaveComboAttack()
 		Attack();
 	}
 }
- 
+
 
 //구르고 있지 않고 죽지 않았고 W,S 또는 A,D키를 누르고 있을 때 Nelia의 AnimInstance를 가져오고 RollMontage를 1.5배 속도로 실행한다.
-void ANelia::Roll()
+void ANelia::Rolls(float Value)
 {
-	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death && (bMovingForward || bMovingRight))
+	if (!bRoll && MovementStatus != EMovementStatus::EMS_Death && (bMovingForward || bMovingRight) && !isClimb && GetWorld()->GetFirstPlayerController()->IsInputKeyDown(EKeys::LeftAlt))
 	{
 		bRoll = true;
 
@@ -864,20 +1000,31 @@ void ANelia::Roll()
 
 		if (RollMontage && AnimInstance)
 		{
-			AnimInstance->Montage_Play(RollMontage, 1.5f);
-			AnimInstance->Montage_JumpToSection(FName("Roll"), RollMontage);
+			FName RollSectionName;
 
-			FTimerHandle WaitHandle;
-			
-			GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-				{
-
-					// 여기에 코드를 치면 된다.
-
-				}), 5.f, false);
+			switch (FMath::RoundToInt(Value))
+			{
+			case 1:
+				RollSectionName = FName("RollForward");
+				break;
+			case -1:
+				RollSectionName = FName("RollBack");
+				break;
+			case 2:
+				RollSectionName = FName("RollRight");
+				break;
+			case -2:
+				RollSectionName = FName("RollLeft");
+				break;
+			default:
+				break;
+			}
+			AnimInstance->Montage_Play(RollMontage, 1.2f);
+			AnimInstance->Montage_JumpToSection(RollSectionName, RollMontage);
 		}
 	}
 }
+
 
 void ANelia::StopRoll()
 {
@@ -887,8 +1034,6 @@ void ANelia::StopRoll()
 //장착한 무기에 SwingSound가 있으면 소리를 재생
 void ANelia::PlaySwingSound()
 { 
-	//UE_LOG(LogTemp, Warning, TEXT("equippedweapon"));
-
 	if (EquippedWeapon->SwingSound)
 	{
 		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
@@ -913,6 +1058,7 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		Die();
 		if (DamageCauser)
 		{
+
 			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
 			if (Enemy)
 			{
@@ -920,15 +1066,17 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			}
 		}
 	}
+	//20233-06-30 수정해야할 거 같은 부분 animinstance 부분 주석처리 block 안될 시 풀기
 	else
 	{
 		Health -= DamageAmount;
 		if (AnimInstance)
 		{
-			AnimInstance->Montage_Play(SkillMontage, 1.f);
-			AnimInstance->Montage_JumpToSection(FName("Block"), SkillMontage);
+			AnimInstance->Montage_Play(CombatMontage, 1.3f);
+			AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
 		}
 	}
+
 	return DamageAmount;
 }
 void ANelia::OnDeath()
@@ -936,7 +1084,7 @@ void ANelia::OnDeath()
 	FTimerHandle DeathTimer;
 
 	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	MainPlayerController->UnPossess();
+	//MainPlayerController->UnPossess();
 
 	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	if (playerCamera)
@@ -946,22 +1094,16 @@ void ANelia::OnDeath()
 
 	MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Visible);
 
-	UE_LOG(LogTemp, Warning, TEXT("OnDeathOnDeathOnDeath"));
-
-	Respawn();
-
-	//GetWorld()->GetTimerManager().SetTimer(DeathTimer, FTimerDelegate::CreateLambda([&]()
-	//	{
-	//		// 죽음 HUD 숨기기
-	//		GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
-	//		Respawn();
-	//	}), DeathDelay, false);
+	GetWorld()->GetTimerManager().SetTimer(DeathTimer, FTimerDelegate::CreateLambda([&]()
+		{
+			// 죽음 HUD 숨기기
+			Respawn();
+			GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
+		}), DeathDelay, false);
 }
 
 void ANelia::Respawn()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Respawn check"));
-
 	FVector RespawnLocation = FVector(-5846.589844, 6323.025879, 7500.007812);
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -973,10 +1115,9 @@ void ANelia::Respawn()
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 
 	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
-	// 카메라 페이드 인
+	//// 카메라 페이드 인
 	if (playerCamera)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Respawn------->playerCamera"));
 		MainPlayerController->DiedHUD->SetVisibility(ESlateVisibility::Hidden);
 
 		playerCamera->StartCameraFade(1.f, 0.f, 3.f, FLinearColor::Black, false, true);
@@ -984,26 +1125,23 @@ void ANelia::Respawn()
 
 	if (AnimInstance && CombatMontage)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimInstance && CombatMontage"));
-
 		GetMesh()->bPauseAnims = false;
 		GetMesh()->bNoSkeletonUpdate = false;
+
 		AnimInstance->Montage_Play(CombatMontage, 0.7f);
 		AnimInstance->Montage_JumpToSection(FName("Revive"), CombatMontage);
-		Health += 50.f;
+		Health += 100.f;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Respawn------->End"));
-}
+}	
 
+//리스폰이랑 같은 기능의 함수 메모리를 위해서 삭제해야함 _______ 수정
 //void ANelia::Revive()
 //{
-//	UE_LOG(LogTemp, Warning, TEXT("Revive check"));
 //
 //	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 //	//APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 //	if (AnimInstance && CombatMontage)
 //	{
-//		UE_LOG(LogTemp, Warning, TEXT("ReviveReviveReviveRevive"));
 //
 //		GetMesh()->bPauseAnims = false;
 //		AnimInstance->Montage_Play(CombatMontage);
@@ -1022,6 +1160,17 @@ void ANelia::ReviveEnd()
 //OverlappingActors라는 배열(순서대로 나열되는)을 만들고 배열에 아무것도 없고 MainPlayerController이면 적 체력바를 안 보이도록 한다.
 void ANelia::UpdateCombatTarget()
 {
+	//FHitResult HitEnemy;
+	//FVector Start = GetActorLocation();
+	////TraceDistance는 시작할 때 40.f을 대입
+	//FVector End = Start + (GetActorForwardVector() * TraceDistance);
+	//FVector arriveEnd = (Start + (GetActorForwardVector()) + FVector(0.f, 0.f, 135.f) + (GetActorForwardVector() * TraceDistance));
+
+	//FCollisionQueryParams TraceParams;
+	//bool bHit = GetWorld()->LineTraceSingleByChannel(HitEnemy, Start, End, ECC_Visibility, TraceParams);
+	//bool bArriveHit = GetWorld()->LineTraceSingleByChannel(HitEnemy, Start, arriveEnd, ECC_Visibility, TraceParams);
+
+	
 	TArray<AActor*> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, EnemyFilter);
 
@@ -1035,6 +1184,7 @@ void ANelia::UpdateCombatTarget()
 	}
 	//OverlappingActors 배열 첫 번째 요소를 Enemy로 형 변환하여 ClosestEnemy에 넣고 대상 위치값과 최소거리를 구함
 	//OverlappingActors 첫 번째 요소부터 순서대로 AEnemy 형태로 형변환 후 제일 가까운 적을 구하여 체력바를 볼 수 있도록 설정하고 공격 대상을 가장 가까운 적으로 지정한다.
+	//2023-6-24 적 구현 중 수정함 
 	AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
 	if (ClosestEnemy)
 	{
@@ -1082,9 +1232,7 @@ void ANelia::SwitchLevel(FName LevelName)
 
 void ANelia::SaveGame()
 {
-	////UE_LOG(LogTemp, Warning, TEXT("SaveGame"));
 	//UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
-	//
 	//SaveGameInstance->CharacterStats.Health = Health;
 	//SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
 	//SaveGameInstance->CharacterStats.Stamina = Stamina;
@@ -1205,7 +1353,7 @@ void ANelia::Interact()
 		/// </summary>
 		if (MainPlayerController->UserInterface != nullptr && (MainPlayerController->UserInterface->CurrentState !=3))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("nelia interact in"));
+			UE_LOG(LogTemp, Warning, TEXT("dialogue interact"));
 			//첫 대화 시작시에는 CurrentState가 0이므로 Interact의 if문을 모두 만족하지 못하고 나오게 되고 
 			MainPlayerController->UserInterface->Interact();
 		}

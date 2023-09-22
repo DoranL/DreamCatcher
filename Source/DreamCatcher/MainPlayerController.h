@@ -103,6 +103,18 @@ public:
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
 	 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WTargetPointer;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* TargetPointer;
+
+
+	bool bTargetPointerVisible;
+
+	void DisplayTargetPointer();
+	void RemoveTargetPointer();
+
 	FVector EnemyLocation;
 
 	//스킬 사용

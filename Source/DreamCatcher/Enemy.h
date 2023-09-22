@@ -58,7 +58,7 @@ public:
 
 	//왜 AAIController이지
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		class AAIController* AIController;
+	class AAIController* AIController;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 		float Health;
@@ -87,6 +87,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* CombatMontage;
 
+
 	FTimerHandle AttackTimer;
 
 	int EnemyAttackCount = 0;
@@ -103,6 +104,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AActor> ExpBlueprint;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AActor> ShootBlueprint;
+
 	FTimerHandle DeathTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -115,7 +119,9 @@ public:
 	bool bTakeDamage;
 
 	float InterpSpeed;
+	
 	bool bInterpToNelia;
+
 	void SetInterpToNelia(bool Interp);
 
 	FVector NeliaLocation;
@@ -136,7 +142,6 @@ public:
 	virtual void AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	virtual void AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
 	UFUNCTION()
 	virtual void CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
@@ -169,7 +174,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	bool bAttacking;
 
-	void  Attack();
+	UFUNCTION(BlueprintCallable)
+	virtual void  Attack();
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
@@ -187,4 +193,9 @@ public:
 	bool Alive();
 
 	void Disappear();
+
+	float deltaTimeSave;
+//2023-06-27 추가사항
+//protected:
+//	int DistanceToCombat;
 };

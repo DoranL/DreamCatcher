@@ -27,66 +27,67 @@ public:
 	bool bHasValidTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-		EArcherMovementStatus ArcherMovementStatus;
+	EArcherMovementStatus ArcherMovementStatus;
 
 	FORCEINLINE void SetEnemyMovementStatus(EArcherMovementStatus Status) { ArcherMovementStatus = Status; }
 	FORCEINLINE EArcherMovementStatus GetArcherMovementStatus() { return ArcherMovementStatus; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-		class USphereComponent* AgroSphere;
+	class USphereComponent* AgroSphere;
 
 	//combatsphere 내에 플레이어가 들어오면 전투
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		USphereComponent* CombatSphere;
+	USphereComponent* CombatSphere;
 
 	//왜 AAIController이지
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-		class AAIController* AIController;
+	class AAIController* AIController;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-		float Health;
+	float Health;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-		float MaxHealth;
+	float MaxHealth;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-		float Damage;
+	float Damage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		class UAnimMontage* AttackMontage;
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UAnimMontage* AttackMontage;
+
+	int EnemyAttackCount = 0;*/
 
 	FTimerHandle AttackTimer;
 
-	int EnemyAttackCount = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackMinTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		float AttackMinTime;
+	float AttackMaxTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		float AttackMaxTime;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		TSubclassOf<UDamageType> DamageTypeClass;
+	TSubclassOf<UDamageType> DamageTypeClass;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
-		FVector CombatTargetLocation;
+	FVector CombatTargetLocation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-		class UBoxComponent* CombatCollision;
+	class UBoxComponent* CombatCollision;
 
 	float InterpSpeed;
-	bool bInterpToNelia;
-	void SetInterpToNelia(bool Interp);
+	bool bInterpToEnemy;
 
-	FVector NeliaLocation;
+	void SetInterpToEnemy(bool Interp);
+
+	FVector EnemyLocation;
 
 	FRotator GetLookAtRotationYaw(FVector Target);
 
 	UPROPERTY(EditAnywhere)
-		TSubclassOf<class AActor> Projectile;
+	TSubclassOf<class AActor> Projectile;
 
 	UFUNCTION(BlueprintCallable)
-		void SpawnProjectile();
+	void SpawnProjectile();
 
 protected:
 	virtual void BeginPlay() override;
@@ -107,26 +108,28 @@ public:
 		virtual void CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable)
-		void MoveToTarget(class ANelia* Target);
+	void MoveToTarget(class ANelia* Target);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		bool bOverlappingCombatSphere;
+	bool bOverlappingCombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		ANelia* CombatTarget;
+	class AEnemy* CombatTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-		bool bAttacking;
+	bool bAttacking;
+
+
+	//2923-07-18 follow character attack 몽타주 없이 SpawnProjectile을 일정 시간 초에 한 번씩 호출함으로써 공격해서 attack이 필요없다고 판단
+	/*UFUNCTION(BlueprintCallable)
+	void  Attack();
 
 	UFUNCTION(BlueprintCallable)
-		void  Attack();
+	void AttackEnd();*/
 
 	UFUNCTION(BlueprintCallable)
-		void AttackEnd();
+	void ActivateCollision();
 
 	UFUNCTION(BlueprintCallable)
-		void ActivateCollision();
-
-	UFUNCTION(BlueprintCallable)
-		void DeactivateCollision();
+	void DeactivateCollision();
 };

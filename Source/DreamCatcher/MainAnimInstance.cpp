@@ -35,5 +35,6 @@ void UMainAnimInstance::UpdateAnimationProperties()
 		{
 			Nelia = Cast<ANelia>(Pawn);
 		}
+		RotationValue = Pawn->GetActorRotation().Pitch;
 	}
 }
