@@ -691,7 +691,7 @@ void ANelia::Block()
 {
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && !bJump && !isClimb && !bRoll)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Blocking in c++"));
+		UE_LOG(LogTemp, Warning, TEXT("Blocking in c++"));
 		isBlock = true;
 		SetMovementStatus(EMovementStatus::EMS_Block);
 		
@@ -710,6 +710,7 @@ void ANelia::Block()
 void ANelia::BlockEnd()
 {
 	isBlock = false;
+	UE_LOG(LogTemp, Warning, TEXT("Blocking in  end"));
 
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	bAttacking = false;
