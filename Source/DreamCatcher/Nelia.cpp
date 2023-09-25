@@ -128,6 +128,8 @@ ANelia::ANelia()
 
 	bTabKeyDown = false;
 	bTargeting = false;
+
+	bTakeDamage = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -437,7 +439,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &ANelia::ESCDown);
 	PlayerInputComponent->BindAction("ESC", IE_Released, this, &ANelia::ESCUp);
 
-	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ANelia::Block);
+	//PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ANelia::Block);
 
 	PlayerInputComponent->BindAction("SprintAttack", IE_Pressed, this, &ANelia::SprintAttack);
 	//PlayerInputComponent->BindAction("Block", IE_Released, this, &ANelia::BlockEnd);
@@ -687,34 +689,33 @@ void ANelia::ESCUp()
 	bESCDown = false;
 }
 
-void ANelia::Block()
-{
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && !bJump && !isClimb && !bRoll)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Blocking in c++"));
-		isBlock = true;
-		SetMovementStatus(EMovementStatus::EMS_Block);
-		
-		bAttacking = true;
-		SetInterpToEnemy(true);
-
-		FTimerHandle WaitHandle;
-
-		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]() {
-			BlockEnd();
-			}), 3.0f, false);
-	}
-}
-
-//건드림
-void ANelia::BlockEnd()
-{
-	isBlock = false;
-	UE_LOG(LogTemp, Warning, TEXT("Blocking in  end"));
-
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-	bAttacking = false;
-}
+//void ANelia::Block()
+//{
+//	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && !bJump && !isClimb && !bRoll)
+//	{
+//		//UE_LOG(LogTemp, Warning, TEXT("Blocking in c++"));
+//		isBlock = true;
+//		SetMovementStatus(EMovementStatus::EMS_Block);
+//		
+//		bAttacking = true;
+//		SetInterpToEnemy(true);
+//
+//		FTimerHandle WaitHandle;
+//
+//		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]() {
+//			BlockEnd();
+//			}), 3.0f, false);
+//	}
+//}
+//
+////건드림
+//void ANelia::BlockEnd()
+//{
+//	isBlock = false;
+//
+//	SetMovementStatus(EMovementStatus::EMS_Normal);
+//	bAttacking = false;
+//}
 
 
 //체력 증가 함수 
@@ -1056,10 +1057,10 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	if (Health - DamageAmount <= 0.f)
 	{
 		Health -= DamageAmount;
+		bTakeDamage = false;
 		Die();
 		if (DamageCauser)
 		{
-
 			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
 			if (Enemy)
 			{
@@ -1070,11 +1071,20 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	//20233-06-30 수정해야할 거 같은 부분 animinstance 부분 주석처리 block 안될 시 풀기
 	else
 	{
-		Health -= DamageAmount;
-		if (AnimInstance)
+		if (AnimInstance && !isBlock)
 		{
+			Health -= DamageAmount;
+			bTakeDamage = true;
 			AnimInstance->Montage_Play(CombatMontage, 1.3f);
 			AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+			UE_LOG(LogTemp, Warning, TEXT("isBlock is FALSE and bTakeDamage is true"));
+		}
+		else if (AnimInstance && isBlock)
+		{
+			bTakeDamage = false;
+			AnimInstance->Montage_Play(CombatMontage, 1.3f);
+			AnimInstance->Montage_JumpToSection(FName("Parry"), CombatMontage);
+			UE_LOG(LogTemp, Warning, TEXT("isBlock is true and bTakeDamage is true"));
 		}
 	}
 
@@ -1354,7 +1364,6 @@ void ANelia::Interact()
 		/// </summary>
 		if (MainPlayerController->UserInterface != nullptr && (MainPlayerController->UserInterface->CurrentState !=3))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("dialogue interact"));
 			//첫 대화 시작시에는 CurrentState가 0이므로 Interact의 if문을 모두 만족하지 못하고 나오게 되고 
 			MainPlayerController->UserInterface->Interact();
 		}

@@ -9,6 +9,7 @@ enum class EMovementStatus : uint8
 	EMS_Sprinting	 UMETA(DisplayName = "Sprinting"),
 	EMS_Death		 UMETA(DisplayName = "Dead"),
 	EMS_Block		 UMETA(DisplayName = "Block"),
+	EMS_Parry		 UMETA(DisplayName = "Parry"),
 
 	EMS_MAX          UMETA(DisplayName = "Max"),
 };
@@ -184,6 +185,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 RandomInt;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	bool bTakeDamage;
+
 	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -267,10 +271,12 @@ public:
 	void ESCDown();
 	void ESCUp();
 
-	UFUNCTION(BlueprintCallable)
+	/*UFUNCTION(BlueprintCallable)
 	void Block();
 	void BlockEnd();
+	*/
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Parry")
 	bool isBlock;
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
