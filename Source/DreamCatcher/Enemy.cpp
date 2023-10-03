@@ -75,6 +75,8 @@ AEnemy::AEnemy()
 
 	InterpSpeed = 25.f;
 	bInterpToNelia = false;
+
+	bSecuringKill = false;
 }
 
 // Called when the game starts or when spawned
@@ -455,7 +457,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			Die(DamageCauser);
 			bTakeDamage = false;
 			//MainPlayerController->RemoveEnemyHealthBar();
-
 		}
 		else
 		{
@@ -494,7 +495,6 @@ void AEnemy::Die(AActor* Causer)
 	
 	MainPlayerController->RemoveEnemyHealthBar();
 	
-
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AgroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -514,9 +514,10 @@ void AEnemy::Die(AActor* Causer)
 //죽은 후에는 애니메이션을 멈추고 스켈레톤도 없애준다. //////////// 근데 여기서 타이머는 왜 쓰는거지?
 void AEnemy::DeathEnd()
 {
+	bSecuringKill = false;
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
-	
+
     GetWorldTimerManager().SetTimer(DeathTimer, this, &AEnemy::Disappear, DeathDelay);
 }
 

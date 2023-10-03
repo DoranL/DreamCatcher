@@ -90,6 +90,7 @@ public:
 
 	FTimerHandle AttackTimer;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	int EnemyAttackCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -117,6 +118,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bTakeDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bSecuringKill;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	int AttackCount;
 
 	float InterpSpeed;
 	

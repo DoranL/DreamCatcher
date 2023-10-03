@@ -943,7 +943,6 @@ void ANelia::Targeting() //Targeting using Tap key
 		//현재 combat target의 이름을 전달하여 출력해줌
 		//UE_LOG(LogTemp, Log, TEXT("%s"), *(CombatTarget->GetName()));
 		targetIndex++;
-
 		MainPlayerController->DisplayTargetPointer();
 	}
 }
@@ -1075,8 +1074,13 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		{
 			Health -= DamageAmount;
 			bTakeDamage = true;
-			AnimInstance->Montage_Play(CombatMontage, 1.3f);
-			AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+			int32 RandomHitMontion = FMath::RandRange(0, 2);
+			FString HitNum = FString::Printf(TEXT("Hit%d"), RandomHitMontion);
+
+			FName RandomHitNum(*HitNum);
+
+			AnimInstance->Montage_Play(HitMontage, 1.3f);
+			AnimInstance->Montage_JumpToSection(RandomHitNum, HitMontage);
 			UE_LOG(LogTemp, Warning, TEXT("isBlock is FALSE and bTakeDamage is true"));
 		}
 		else if (AnimInstance && isBlock)

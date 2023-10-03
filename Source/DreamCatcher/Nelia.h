@@ -321,6 +321,9 @@ public:
 	class UAnimMontage* BlockMontage;*/
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* HitMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* SkillMontage;
 
 	UPROPERTY(EditAnywhere)
