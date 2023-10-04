@@ -130,6 +130,8 @@ ANelia::ANelia()
 	bTargeting = false;
 
 	bTakeDamage = false;
+	
+	bcanUseSkill = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -749,11 +751,13 @@ void ANelia::AddExp()
 {
 	RandomInt = FMath::RandRange(10, 30);
 	Exp += RandomInt;
-	
+
 	if (Exp >= MaxExp)
 	{
 		Level+= 1;
 		Exp = 0.f;
+		
+		this->EquippedWeapon->Damage += 10;
 		//UE_LOG(LogTemp, Warning, TEXT("MaxExp%d"), MaxExp);
 	}
 }
@@ -863,8 +867,9 @@ void ANelia::Attack()
 			}
 
 			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
-			if (AnimInstance && SkillMontage)
+			if (AnimInstance && SkillMontage && bcanUseSkill)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("bCanUseSkill"));
 				switch (pressSkillNum)
 				{
 				case 1:
