@@ -18,6 +18,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UserInterface.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -379,6 +380,7 @@ void AEnemy::Attack()
 				int32 Section = EnemyAttackCount;
 				//2023-6-24 랜덤으로 하려면 아래 SECTIOIN을 변경해야함
 				// int AttackNum = FMath::RandRange(1, 5);
+
 				switch (Section)
 				{
 				case 0:
@@ -389,7 +391,6 @@ void AEnemy::Attack()
 					AnimInstance->Montage_Play(CombatMontage, 1.2f);
 					AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 					break;
-				
 				default:
 					if (world)
 					{

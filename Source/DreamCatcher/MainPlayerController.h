@@ -120,6 +120,9 @@ public:
 	//스킬 사용
 	int CheckInputKey();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
+	int checkPressKey;
+
 	//스킬 버튼을 누르고 있는 시간을 체크
 	//int CheckInputKeyTime();
 

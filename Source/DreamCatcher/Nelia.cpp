@@ -81,7 +81,7 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Level = 0;
+	Level = 1;
 	Exp = 0.f;
 	MaxExp = 100.f;
 
@@ -457,9 +457,9 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ANelia::Interact);
 
-	PlayerInputComponent->BindAction("SkillOne", IE_Pressed, this, &ANelia::Attack);
-	PlayerInputComponent->BindAction("SkillTwo", IE_Pressed, this, &ANelia::Attack);
-	PlayerInputComponent->BindAction("SkillThree", IE_Pressed, this, &ANelia::Attack);
+	PlayerInputComponent->BindAction("SkillOne", IE_Pressed, this, &ANelia::Skill);
+	PlayerInputComponent->BindAction("SkillTwo", IE_Pressed, this, &ANelia::Skill);
+	PlayerInputComponent->BindAction("SkillThree", IE_Pressed, this, &ANelia::Skill);
 
 	PlayerInputComponent->BindAction("Targeting", IE_Pressed, this, &ANelia::Targeting);
 	PlayerInputComponent->BindAction("CancelTargeting", IE_Pressed, this, &ANelia::CancelTargeting);
@@ -835,13 +835,13 @@ void ANelia::Attack()
 		SetInterpToEnemy(true);
 
 		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
-		int pressSkillNum = MainPlayerController->CheckInputKey();
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		
 		if (AnimInstance && CombatMontage)
 		{
 			int32 Section = AttackMotionCount;
 			PlaySwingSound();
+
 
 			switch (Section)
 			{
@@ -854,7 +854,6 @@ void ANelia::Attack()
 				AnimInstance->Montage_Play(CombatMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
 				AttackMotionCount++;
-
 				break;
 			case 2:
 				AnimInstance->Montage_Play(CombatMontage, 0.9f);
@@ -865,30 +864,6 @@ void ANelia::Attack()
 			default:
 				break;
 			}
-
-			//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
-			if (AnimInstance && SkillMontage && bcanUseSkill)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("bCanUseSkill"));
-				switch (pressSkillNum)
-				{
-				case 1:
-					//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
-					AnimInstance->Montage_Play(SkillMontage, 0.9f);
-					AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
-					break;
-				case 2:
-					AnimInstance->Montage_Play(SkillMontage, 1.f);
-					AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
-					break;
-				case 3:
-					AnimInstance->Montage_Play(SkillMontage, 1.);
-					AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
-					break;
-				default:
-					break;
-				}
-			}
 		}
 		
 		if (AttackMotionCount > 2)
@@ -898,7 +873,56 @@ void ANelia::Attack()
 	}
 }
 
+void ANelia::Skill()
+{
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
+	{
+		bAttacking = true;
+		SetInterpToEnemy(true);
+
+		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
+		int pressSkillNum = MainPlayerController->CheckInputKey();
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
+		if (AnimInstance && SkillMontage && bcanUseSkill /*&& pressSkillNum == Level*/)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%d"), pressSkillNum);
+			UE_LOG(LogTemp, Warning, TEXT("%d"), Level);
+			
+			PlaySwingSound();
+
+			switch (pressSkillNum)
+			{
+			case 1:
+				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+				AnimInstance->Montage_Play(SkillMontage, 0.9f);
+				AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
+				UE_LOG(LogTemp, Warning, TEXT("SKILL ONE"));
+
+				break;
+			case 2:
+				AnimInstance->Montage_Play(SkillMontage, 1.f);
+				AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
+				break;
+			case 3:
+				AnimInstance->Montage_Play(SkillMontage, 1.);
+				AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
 void ANelia::AttackEnd()
+{
+	bAttacking = false;
+	SetInterpToEnemy(false);
+}
+
+void ANelia::SkillEnd()
 {
 	bAttacking = false;
 	SetInterpToEnemy(false);

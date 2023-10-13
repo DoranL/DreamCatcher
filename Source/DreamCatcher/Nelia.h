@@ -310,9 +310,15 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Attack();
+
+	UFUNCTION(BlueprintCallable)
+	void Skill();
 	
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void SkillEnd();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;

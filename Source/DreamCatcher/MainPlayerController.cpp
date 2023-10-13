@@ -251,10 +251,12 @@ void AMainPlayerController::RemoveDialogue()
 
 int AMainPlayerController::CheckInputKey()
 {
-	int checkPressKey = 0;
+	checkPressKey = 0;
+	
 	if (this->WasInputKeyJustPressed(EKeys::One) || (this->WasInputKeyJustPressed(EKeys::NumPadOne)))
 	{
 		checkPressKey = 1;
+
 	}
 	if (this->WasInputKeyJustPressed(EKeys::Two) || (this->WasInputKeyJustPressed(EKeys::NumPadTwo)))
 	{
