@@ -341,8 +341,11 @@ public:
 	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* RespawnMontage;*/
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	bool bcanUseSkill;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
+	int pressSkillNum;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bRoll;

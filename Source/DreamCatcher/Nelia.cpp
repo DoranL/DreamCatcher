@@ -877,19 +877,18 @@ void ANelia::Skill()
 {
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("EQUIP"));
 		bAttacking = true;
+		bcanUseSkill = true;
 		SetInterpToEnemy(true);
 
 		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
-		int pressSkillNum = MainPlayerController->CheckInputKey();
+		pressSkillNum = MainPlayerController->CheckInputKey();
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 		//UBlueprintGeneratedClass* BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/Skill/MeteorSkill.MeteorSkill_C"));
-		if (AnimInstance && SkillMontage && bcanUseSkill /*&& pressSkillNum == Level*/)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("%d"), pressSkillNum);
-			UE_LOG(LogTemp, Warning, TEXT("%d"), Level);
-			
+		if (AnimInstance && SkillMontage && bcanUseSkill && pressSkillNum <= Level)
+		{	
 			PlaySwingSound();
 
 			switch (pressSkillNum)
@@ -898,8 +897,6 @@ void ANelia::Skill()
 				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
 				AnimInstance->Montage_Play(SkillMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
-				UE_LOG(LogTemp, Warning, TEXT("SKILL ONE"));
-
 				break;
 			case 2:
 				AnimInstance->Montage_Play(SkillMontage, 1.f);
@@ -912,6 +909,10 @@ void ANelia::Skill()
 			default:
 				break;
 			}
+		}
+		else
+		{
+			SkillEnd();
 		}
 	}
 }

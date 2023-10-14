@@ -285,12 +285,13 @@ void AEnemy::MoveToTarget(ANelia* Target)
 		//타겟을 목표 액터로 지정
 		MoveRequest.SetGoalActor(Target);
 		//이 원 내에 있을 때 타겟으로 인식
-		MoveRequest.SetAcceptanceRadius(20.0f);
-
+		MoveRequest.SetAcceptanceRadius(40.0f);
+		
 		FNavPathSharedPtr NavPath;
 
 		AIController->MoveTo(MoveRequest, &NavPath);
 	}
+	
 }
 
 
