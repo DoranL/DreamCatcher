@@ -170,6 +170,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int Level;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	bool bCheckLevelUp;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int Exp;
 

@@ -81,7 +81,7 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Level = 1;
+	Level = 2;
 	Exp = 0.f;
 	MaxExp = 100.f;
 
@@ -132,6 +132,8 @@ ANelia::ANelia()
 	bTakeDamage = false;
 	
 	bcanUseSkill = false;
+
+	bCheckLevelUp = false;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -582,7 +584,8 @@ void ANelia::MoveForward(float Value)
 
 		if (Value != 0.0f)
 		{
-			GetCharacterMovement()->Velocity = FVector(0, 0, Value*100.f);
+			GetCharacterMovement()->Velocity = FVector(0, 0, Value * 300.f);
+			//GetCharacterMovement()->Velocity = FVector(0, 0, Value * 100.f);
 		}
 		AddMovementInput(Direction, wallUpDown);
 	}
@@ -754,6 +757,7 @@ void ANelia::AddExp()
 
 	if (Exp >= MaxExp)
 	{
+		bCheckLevelUp = true;
 		Level+= 1;
 		Exp = 0.f;
 		

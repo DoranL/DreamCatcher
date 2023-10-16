@@ -441,7 +441,6 @@ void AEnemy::AttackEnd()
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	UE_LOG(LogTemp, Warning, TEXT("EnemyHey"));
 	//2023-07-23 수정사항
 	//MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
 
