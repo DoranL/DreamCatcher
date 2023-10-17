@@ -22,6 +22,7 @@ void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	bDialogueVisible = false;
+	checkDialogueNumber = 0;
 
 	HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
 
@@ -107,6 +108,7 @@ void AMainPlayerController::BeginPlay()
 		{
 			UserInterface->AddToViewport();
 			UserInterface->SetVisibility(ESlateVisibility::Hidden);
+			UE_LOG(LogTemp, Warning, TEXT("USERINTERFACE"));
 		}
 	}
 }
@@ -218,6 +220,7 @@ void AMainPlayerController::DisplayDialogue()
 {
 	if (UserInterface)
 	{
+		//UE_LOG(LogTemp, Warning, TEXT("%d"), Nelia->dialogueCheckNum);
 		bDialogueVisible = true;
 		UserInterface->SetVisibility(ESlateVisibility::Visible);
 		SetCinematicMode(true, true, true);
@@ -227,7 +230,18 @@ void AMainPlayerController::DisplayDialogue()
 		SetInputMode(InputModeUIOnly);
 
 		bShowMouseCursor = true;
-		UserInterface->InitializeDialogue(IntroDialogue);
+
+		switch (checkDialogueNumber)
+		{
+		case 0:
+			UserInterface->InitializeDialogue(DrumEventDialogue);
+			break;
+		case 1:
+			UserInterface->InitializeDialogue(IntroDialogue);
+			break;
+		default:
+			break;
+		}
 	}
 }
 

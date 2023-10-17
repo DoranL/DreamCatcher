@@ -401,6 +401,9 @@ public:
 
 	bool bTargeting;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Dialogue")
+	int dialogueCheckNum;
+
 private:
 	/*UFUNCTION(BlueprintCallable)
 	void Revive();*/

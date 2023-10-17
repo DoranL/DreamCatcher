@@ -123,6 +123,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	int checkPressKey;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Dialogue")
+	int checkDialogueNumber;
+
 	//스킬 버튼을 누르고 있는 시간을 체크
 	//int CheckInputKeyTime();
 
@@ -137,4 +140,7 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue")
 	class UDataTable* IntroDialogue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue")
+	class UDataTable* DrumEventDialogue;
 };

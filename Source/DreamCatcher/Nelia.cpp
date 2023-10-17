@@ -134,6 +134,8 @@ ANelia::ANelia()
 	bcanUseSkill = false;
 
 	bCheckLevelUp = false;
+
+	dialogueCheckNum = 0;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -1410,6 +1412,7 @@ void ANelia::Interact()
 		if (!MainPlayerController->bDialogueVisible)
 		{
 			MainPlayerController->DisplayDialogue();
+			UE_LOG(LogTemp, Warning, TEXT("%d"), dialogueCheckNum);
 		}
 	}
 }
