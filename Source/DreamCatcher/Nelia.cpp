@@ -81,7 +81,7 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Level = 2;
+	Level = 3;
 	Exp = 0.f;
 	MaxExp = 100.f;
 
