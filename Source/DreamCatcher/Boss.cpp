@@ -30,7 +30,7 @@ void ABoss::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
 		if (Target)
 		{
-			//MoveToTarget(Target);
+			MoveToTarget(Target);
 			bOverlappingAgroSphere = true;
 			MainPlayerController->DisplayEnemyHealthBar();
 		}
@@ -177,7 +177,6 @@ void ABoss::Attack()
 				else
 				{
 					SetInterpToNelia(true);
-					UE_LOG(LogTemp, Warning, TEXT("ELSE_YES"));
 				}
 			}
 

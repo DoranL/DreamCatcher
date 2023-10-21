@@ -281,6 +281,7 @@ void AEnemy::MoveToTarget(ANelia* Target)
 
 	if (AIController && !bAttacking)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("MOVETOTARGET"));
 		FAIMoveRequest MoveRequest;
 		//타겟을 목표 액터로 지정
 		MoveRequest.SetGoalActor(Target);

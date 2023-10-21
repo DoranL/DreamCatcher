@@ -108,7 +108,6 @@ void AMainPlayerController::BeginPlay()
 		{
 			UserInterface->AddToViewport();
 			UserInterface->SetVisibility(ESlateVisibility::Hidden);
-			UE_LOG(LogTemp, Warning, TEXT("USERINTERFACE"));
 		}
 	}
 }
