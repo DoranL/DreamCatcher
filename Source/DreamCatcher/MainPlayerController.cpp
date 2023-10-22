@@ -92,6 +92,16 @@ void AMainPlayerController::BeginPlay()
 		}
 	}
 
+	if (WHint_Stage2HUD)
+	{
+		Hint_Stage2HUD = CreateWidget<UUserWidget>(this, WHint_Stage2HUD);
+		if (Hint_Stage2HUD)
+		{
+			Hint_Stage2HUD->AddToViewport();
+			Hint_Stage2HUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
 	if (WPauseMenu)
 	{
 		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
@@ -278,6 +288,10 @@ int AMainPlayerController::CheckInputKey()
 	if (this->WasInputKeyJustPressed(EKeys::Three) || (this->WasInputKeyJustPressed(EKeys::NumPadThree)))
 	{
 		checkPressKey = 3;
+	}
+	if (this->WasInputKeyJustPressed(EKeys::Four) || (this->WasInputKeyJustPressed(EKeys::NumPadFour)))
+	{
+		checkPressKey = 4;
 	}
 	
 	return checkPressKey;

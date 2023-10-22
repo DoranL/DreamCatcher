@@ -281,7 +281,6 @@ void AEnemy::MoveToTarget(ANelia* Target)
 
 	if (AIController && !bAttacking)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MOVETOTARGET"));
 		FAIMoveRequest MoveRequest;
 		//타겟을 목표 액터로 지정
 		MoveRequest.SetGoalActor(Target);
@@ -467,9 +466,10 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			MainPlayerController->DisplayEnemyHealthBar();
 
 			Health -= DamageAmount;
-			//UE_LOG(LogTemp, Warning, TEXT("IS OKAY"));			
+
 			if (AnimInstance)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Enemy take damage %f in"), DamageCauser);
 				AnimInstance->Montage_Play(CombatMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
 			}

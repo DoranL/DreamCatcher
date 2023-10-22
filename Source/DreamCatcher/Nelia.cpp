@@ -136,6 +136,8 @@ ANelia::ANelia()
 	bCheckLevelUp = false;
 
 	dialogueCheckNum = 0;
+
+	PotionCount = 3;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -464,6 +466,7 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("SkillOne", IE_Pressed, this, &ANelia::Skill);
 	PlayerInputComponent->BindAction("SkillTwo", IE_Pressed, this, &ANelia::Skill);
 	PlayerInputComponent->BindAction("SkillThree", IE_Pressed, this, &ANelia::Skill);
+	PlayerInputComponent->BindAction("SkillFour", IE_Pressed, this, &ANelia::Skill);
 
 	PlayerInputComponent->BindAction("Targeting", IE_Pressed, this, &ANelia::Targeting);
 	PlayerInputComponent->BindAction("CancelTargeting", IE_Pressed, this, &ANelia::CancelTargeting);
@@ -883,7 +886,6 @@ void ANelia::Skill()
 {
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("EQUIP"));
 		bAttacking = true;
 		bcanUseSkill = true;
 		SetInterpToEnemy(true);
@@ -901,20 +903,32 @@ void ANelia::Skill()
 			{
 			case 1:
 				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
+				this->EquippedWeapon->Damage = 25;
 				AnimInstance->Montage_Play(SkillMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
 				break;
 			case 2:
+				this->EquippedWeapon->Damage = 10;
 				AnimInstance->Montage_Play(SkillMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 				break;
 			case 3:
-				AnimInstance->Montage_Play(SkillMontage, 1.);
+				this->EquippedWeapon->Damage = 40;
+				AnimInstance->Montage_Play(SkillMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
 				break;
 			default:
+				this->EquippedWeapon->Damage = 25 * Level;
 				break;
 			}
+		}
+		if (AnimInstance && SkillMontage && pressSkillNum == 4 && PotionCount > 0)
+		{
+			AnimInstance->Montage_Play(SkillMontage, 1.f);
+			AnimInstance->Montage_JumpToSection(FName("Heal"), SkillMontage);
+			PotionCount -= 1;
+			Health += 25;
+			UE_LOG(LogTemp, Warning, TEXT("Healing"));
 		}
 		else
 		{
@@ -1117,14 +1131,12 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 
 			AnimInstance->Montage_Play(HitMontage, 1.3f);
 			AnimInstance->Montage_JumpToSection(RandomHitNum, HitMontage);
-			UE_LOG(LogTemp, Warning, TEXT("isBlock is FALSE and bTakeDamage is true"));
 		}
 		else if (AnimInstance && isBlock)
 		{
 			bTakeDamage = false;
 			AnimInstance->Montage_Play(CombatMontage, 1.3f);
 			AnimInstance->Montage_JumpToSection(FName("Parry"), CombatMontage);
-			UE_LOG(LogTemp, Warning, TEXT("isBlock is true and bTakeDamage is true"));
 		}
 	}
 
@@ -1412,7 +1424,6 @@ void ANelia::Interact()
 		if (!MainPlayerController->bDialogueVisible)
 		{
 			MainPlayerController->DisplayDialogue();
-			UE_LOG(LogTemp, Warning, TEXT("%d"), dialogueCheckNum);
 		}
 	}
 }

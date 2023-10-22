@@ -181,7 +181,7 @@ public:
 	int MaxExp = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
-	int32 Coins;
+	int32 PotionCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int checkPointCount;
