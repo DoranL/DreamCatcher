@@ -102,6 +102,16 @@ void AMainPlayerController::BeginPlay()
 		}
 	}
 
+	if (WEndingSectHUD)
+	{
+		EndingSectHUD = CreateWidget<UUserWidget>(this, WEndingSectHUD);
+		if (EndingSectHUD)
+		{
+			EndingSectHUD->AddToViewport();
+			EndingSectHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
 	if (WPauseMenu)
 	{
 		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
