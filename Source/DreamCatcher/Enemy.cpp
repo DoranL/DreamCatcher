@@ -73,6 +73,7 @@ AEnemy::AEnemy()
 	DeathDelay = 2.f;
 
 	bHasValidTarget = false;
+	bTakeDamageAfterDeath = false;
 
 	InterpSpeed = 25.f;
 	bInterpToNelia = false;
@@ -210,8 +211,10 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 			Target->SetHasCombatTarget(false);
 
 			Target->UpdateCombatTarget();
-
-			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
+			if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
+			{
+				SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
+			}
 			if (AIController)
 			{
 				AIController->StopMovement();
@@ -277,7 +280,10 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 //Nelia에게 이동하도록 타겟으로 잡고 만약 AIController가 있으면 문제점: navpath를 통해 moveto를 설정하기 때문에 플레이어가 공중에 있는 경우 추적이 불가능
 void AEnemy::MoveToTarget(ANelia* Target)
 {
-	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_MoveToTarget);
+	if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
+	{
+		SetEnemyMovementStatus(EEnemyMovementStatus::EMS_MoveToTarget);
+	}
 
 	if (AIController && !bAttacking)
 	{
@@ -455,6 +461,12 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		if (Health - DamageAmount <= 0.f)
 		{
 			Health -= DamageAmount;
+
+			if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
+			{
+				SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+			}
+			
 			Die(DamageCauser);
 			bTakeDamage = false;
 			//MainPlayerController->RemoveEnemyHealthBar();
@@ -469,7 +481,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 
 			if (AnimInstance)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Enemy take damage %f in"), DamageCauser);
 				AnimInstance->Montage_Play(CombatMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
 			}
@@ -485,8 +496,10 @@ void AEnemy::Die(AActor* Causer)
 {
 	FTimerHandle WaitHandle;
 	MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
-
-	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+	if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
+	{
+		SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+	}
 	UWorld* world = GetWorld();
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)

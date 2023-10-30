@@ -39,7 +39,6 @@ void ABoss::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	float hitRand = FMath::RandRange(1.3f, 1.8f);
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	//2023-07-23 수정사항
 	//MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
@@ -91,7 +90,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 					}
 					else
 					{
-						AnimInstance->Montage_Play(CombatMontage, hitRand);
+						AnimInstance->Montage_Play(CombatMontage, 1.f);
 						AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
 					}
 				}
@@ -179,118 +178,6 @@ void ABoss::Attack()
 					SetInterpToNelia(true);
 				}
 			}
-
-			//if (AnimInstance && CombatMontage && bInterpToNelia/* && EnemyMovementStatus != EEnemyMovementStatus::EMS_MoveToTarget*/)
-			//{
-			//	/*랜덤으로 공격 선택;
-			//	int RandValue = FMath::RandRange(0, 4);*/
-			//	
-			//	/*보스와 플레이어 사이 거리에 따른 공격 선택 테스트 이전 
-			//	float distanceCalc = FVector::Distance(this->GetActorLocation(), Nelia->GetActorLocation());
-			//	distanceCalc /= 600.f;
-			//	int choiceNum = static_cast<int>(distanceCalc);*/
-
-			//	float RandTiming = FMath::FRandRange(0.f, 8.f);
-			//	static int choiceAttackNum = 0;
-			//	static int AttackNumStorage = 0;
-			//	static int countAttack = 0;
-
-			//	//보스와 플레이어 사이 거리에 따른 공격 선택 테스트 이전2
-			//	float DistanceToCombat = FVector::Distance(this->GetActorLocation(), Nelia->GetActorLocation());
-			//	//UE_LOG(LogTemp, Warning, TEXT("Distance, %f"), DistanceToCombat);
-			//	int DistanceToCombatInt = FMath::TruncToFloat(DistanceToCombat / 500.f);
-			//	//UE_LOG(LogTemp, Warning, TEXT("Calc Value, %d"), DistanceToCombatInt);
-
-			//	SetInterpToNelia(false);
-
-			//	if (DistanceToCombatInt < 3)
-			//	{
-			//		choiceAttackNum = FMath::RandRange(0, 2);
-			//		UE_LOG(LogTemp, Warning, TEXT("First___ChoiceAttackNum_RandomValue_IS %d"), choiceAttackNum);
-			//		if (choiceAttackNum == AttackNumStorage)
-			//		{
-			//			choiceAttackNum++;
-			//			UE_LOG(LogTemp, Warning, TEXT("Seccond___When_Choice_AttackNum_isSame_plus %d"), choiceAttackNum);
-			//		}
-			//		AttackNumStorage = choiceAttackNum;
-			//		UE_LOG(LogTemp, Warning, TEXT("Third___AttackStorage %d"), AttackNumStorage);
-			//	}
-			//	else
-			//	{
-			//		choiceAttackNum = FMath::RandRange(3, 4);
-			//		UE_LOG(LogTemp, Warning, TEXT("Fourth___Range_ThreeAndFour_choickAttackNum_RandomVluae_IS %d"), choiceAttackNum);
-			//		if (choiceAttackNum == AttackNumStorage)
-			//		{
-			//			choiceAttackNum++;
-			//			UE_LOG(LogTemp, Warning, TEXT("fifth___When_choice_attackNum_isSame_plus %d"), choiceAttackNum);
-			//		}
-			//		AttackNumStorage = choiceAttackNum;
-			//		UE_LOG(LogTemp, Warning, TEXT("Sixth___AttackStorageTwo %d"), AttackNumStorage);
-			//	}
-
-			//	if (RandTiming <= 0.2f)
-			//	{
-			//		RandTiming = FMath::FRandRange(0.85f, 1.f);
-			//	}
-			//	else
-			//	{
-			//		RandTiming = FMath::FRandRange(1.01f, 1.3f);
-			//	}
-			//	switch (AttackNumStorage)
-			//	{
-			//	case 0:
-			//		SetInterpToNelia(false);
-
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
-			//		countAttack++;
-			//		break;
-			//	case 1:
-			//		SetInterpToNelia(false);
-			//		//3
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
-			//		countAttack++;
-			//		break;
-			//	case 2:
-			//		SetInterpToNelia(false);
-
-			//		AnimInstance->Montage_Play(CombatMontage, 0.8f);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
-			//		UE_LOG(LogTemp, Warning, TEXT("CASE_tWO"));
-			//		countAttack++;
-			//		break;
-			//	case 3:
-			//		SetInterpToNelia(false);
-
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack5"), CombatMontage);
-			//		countAttack++;
-			//		break;
-			//	case 4:
-			//		SetInterpToNelia(false);
-			//		//4
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
-			//		countAttack++;
-			//		break;
-			//	default:
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Default_Parrying"), CombatMontage);
-			//		break;
-			//	}
-			//	if (countAttack > 5)
-			//	{
-			//		AnimInstance->Montage_Play(CombatMontage, RandTiming);
-			//		AnimInstance->Montage_JumpToSection(FName("Attack4"), CombatMontage);
-			//		countAttack = 0;
-			//	}
-			//	else 
-			//	{
-			//		SetInterpToNelia(true);
-			//		UE_LOG(LogTemp, Warning, TEXT("ELSE_YES"));
-			//	}
-			//}
 		}
 	}
 }

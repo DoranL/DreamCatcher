@@ -131,7 +131,7 @@ ANelia::ANelia()
 
 	bTakeDamage = false;
 	
-	bcanUseSkill = false;
+	bcanUseSkill = true;
 
 	bCheckLevelUp = false;
 
@@ -887,7 +887,6 @@ void ANelia::Skill()
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
 	{
 		bAttacking = true;
-		bcanUseSkill = true;
 		SetInterpToEnemy(true);
 
 		//MainPlayerController에 정의한 플레이어가 입력한 스킬 확인 함수에서 반환한 키 값을 pressSillNum에 대입
@@ -898,7 +897,6 @@ void ANelia::Skill()
 		if (AnimInstance && SkillMontage && bcanUseSkill && pressSkillNum <= Level)
 		{	
 			PlaySwingSound();
-
 			switch (pressSkillNum)
 			{
 			case 1:
@@ -909,7 +907,7 @@ void ANelia::Skill()
 				break;
 			case 2:
 				this->EquippedWeapon->Damage = 10;
-				AnimInstance->Montage_Play(SkillMontage, 1.f);
+				AnimInstance->Montage_Play(SkillMontage, 1.3f);
 				AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 				break;
 			case 3:
@@ -922,7 +920,7 @@ void ANelia::Skill()
 				break;
 			}
 		}
-		if (AnimInstance && SkillMontage && pressSkillNum == 4 && PotionCount > 0)
+		else if (AnimInstance && SkillMontage && pressSkillNum == 4 && PotionCount > 0)
 		{
 			AnimInstance->Montage_Play(SkillMontage, 1.f);
 			AnimInstance->Montage_JumpToSection(FName("Heal"), SkillMontage);
