@@ -104,9 +104,6 @@ void UUserInterface::Interact()
                 {
                     OnSetOption(i, Dialogue[RowIndex]->MessageOptions[i].OptionText); //응답 보이게 함
                 }
-
-                UE_LOG(LogTemp, Warning, TEXT("CurrentState = 111111111"));
-
                 
                 CurrentState = 3; // npc의 대사 종료 이후 플레이어의 option 선택 창을 띄운 상태로 아직 플레이어가 option을 선택하지 않은 상태
             }
@@ -138,8 +135,6 @@ void UUserInterface::Interact()
     }
     else if (CurrentState == 3) // 플레이어 응답지를 설정한 상태 즉 대화창에서 npc에 대한 답변을 선택할 수 있는 경우 들어가는 파트
     {
-        UE_LOG(LogTemp, Warning, TEXT("CurrentState = 3"));
-
         //데이터 테이블 상에서 보면 MessageOption에 Answer index가 있는데 이 변수는 플레이어가 대사 선택 가능한 상태에서 한 대사를 클릭 시 해당 숫자를 RowIndex로 넣어줌으로써 예를 들어 2일 경우 
         //배열이기 때문에 3번째 문장인 row3로 이동한다.
         RowIndex = Dialogue[RowIndex]->MessageOptions[SelectedOption].AnswerIndex;
@@ -147,16 +142,12 @@ void UUserInterface::Interact()
 
         if ((RowIndex >= 0) && (RowIndex < Dialogue.Num())) // npc 대사 있으면
         {
-            UE_LOG(LogTemp, Log, TEXT("CurrentState = 3 and RowIndex>0 and RowIndex < Dialogue.Num"));
-
             PlayerDialogTextBlock->SetText(FText::FromString(""));
             MessageIndex = 0;
             AnimateMessage(Dialogue[RowIndex]->Messages[MessageIndex].ToString());
         }
         else // npc 대사 없으면 대화 종료
         {
-            UE_LOG(LogTemp, Warning, TEXT("CurrentState = 3 and RowIndex < 0 and rowindex > dialogue.num() "));
-
             CurrentState = 0;
             OnAnimationHideMessageUI();
             MainPlayerController->RemoveDialogue();
@@ -243,7 +234,6 @@ void UUserInterface::InitializeDialogue(class UDataTable* DialogueTable)
 		if (Dialogue[RowIndex]->Messages.Num() > 0)
 		{
 			MessageIndex = 0;
-            UE_LOG(LogTemp, Warning, TEXT("ONANIMATIONSHOWMESSAGEUI"));
 
 			OnAnimationShowMessageUI();
 

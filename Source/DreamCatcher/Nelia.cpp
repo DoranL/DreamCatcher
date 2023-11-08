@@ -137,7 +137,7 @@ ANelia::ANelia()
 
 	dialogueCheckNum = 0;
 
-	PotionCount = 3;
+	PotionCount = 1;
 }
 
 //게임 플레이 시 재정의 되는 부분
@@ -664,6 +664,15 @@ void ANelia::PickupPress()
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
+	else if (ActiveOverlappingItem && !bAttacking && EquippedWeapon)
+	{
+		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+		if (Weapon)
+		{
+			Weapon->Equip(this);
+			SetActiveOverlappingItem(nullptr);
+		}
+	}
 	else
 	{
 		if (bAttacking)
@@ -911,7 +920,7 @@ void ANelia::Skill()
 				AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 				break;
 			case 3:
-				this->EquippedWeapon->Damage = 40;
+				this->EquippedWeapon->Damage = 30;
 				AnimInstance->Montage_Play(SkillMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
 				break;
@@ -926,7 +935,7 @@ void ANelia::Skill()
 			AnimInstance->Montage_JumpToSection(FName("Heal"), SkillMontage);
 			PotionCount -= 1;
 			Health += 25;
-			UE_LOG(LogTemp, Warning, TEXT("Healing"));
+			//UE_LOG(LogTemp, Warning, TEXT("Healing"));
 		}
 		else
 		{
@@ -1165,7 +1174,7 @@ void ANelia::OnDeath()
 
 void ANelia::Respawn()
 {
-	FVector RespawnLocation = FVector(-5846.589844, 6323.025879, 7500.007812);
+	//FVector RespawnLocation = FVector(-5846.589844, 6323.025879, 7500.007812);
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 

@@ -70,15 +70,13 @@ AEnemy::AEnemy()
 
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
-	DeathDelay = 2.f;
+	DeathDelay = 1.f;
 
 	bHasValidTarget = false;
-	bTakeDamageAfterDeath = false;
+	HitCount = 0;
 
 	InterpSpeed = 25.f;
 	bInterpToNelia = false;
-
-	bSecuringKill = false;
 }
 
 // Called when the game starts or when spawned
@@ -127,7 +125,7 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (!AIController)
-	{
+	{    
 		AIController = Cast<AAIController>(GetController());
 	}
 	
@@ -456,27 +454,36 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	}
 
 	//2023-08-08 수정 targeting 표시가 없을 때라도 데미지가 들어가게 하고 싶음 
-	if (Nelia->bTargeting || Nelia->bHasCombatTarget)
+	if ((Nelia->bTargeting || Nelia->bHasCombatTarget) && Nelia->CombatTarget)
 	{
-		if (Health - DamageAmount <= 0.f)
+		if (Health - DamageAmount <= 0.f && HitCount <1)
 		{
 			Health -= DamageAmount;
-
 			if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
 			{
 				SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+				MainPlayerController->RemoveEnemyHealthBar();
 			}
 			
 			Die(DamageCauser);
 			bTakeDamage = false;
 			//MainPlayerController->RemoveEnemyHealthBar();
 		}
-		else
+		else if (Health - DamageAmount <= 0.f && HitCount > 2)
 		{
+			bTakeDamage = false;
+			Health = 0;
+			if (AnimInstance)
+			{
+				AnimInstance->Montage_Play(CombatMontage, 1.1f);
+				AnimInstance->Montage_JumpToSection(FName("Recover"), CombatMontage);
+			}
+		}
+		else if(Health - DamageAmount > 0.f)
+		{
+			//HitCount++;
 			bTakeDamage = true;
-
 			MainPlayerController->DisplayEnemyHealthBar();
-
 			Health -= DamageAmount;
 
 			if (AnimInstance)
@@ -529,7 +536,6 @@ void AEnemy::Die(AActor* Causer)
 //죽은 후에는 애니메이션을 멈추고 스켈레톤도 없애준다. //////////// 근데 여기서 타이머는 왜 쓰는거지?
 void AEnemy::DeathEnd()
 {
-	bSecuringKill = false;
 	GetMesh()->bPauseAnims = true;
 	GetMesh()->bNoSkeletonUpdate = true;
 

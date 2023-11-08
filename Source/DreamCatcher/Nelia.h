@@ -404,6 +404,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Dialogue")
 	int dialogueCheckNum;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Spawn")
+	FVector RespawnLocation;
+
 private:
 	/*UFUNCTION(BlueprintCallable)
 	void Revive();*/

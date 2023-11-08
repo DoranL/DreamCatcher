@@ -121,7 +121,6 @@ void AFollowCharacter::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedC
 		if (Nelia)
 		{
 			MoveToTarget(Nelia);
-			UE_LOG(LogTemp, Warning, TEXT("ing ing check"));
 		}
 	}
 }

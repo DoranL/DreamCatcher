@@ -102,6 +102,16 @@ void AMainPlayerController::BeginPlay()
 		}
 	}
 
+	if (WHint_Stage3HUD)
+	{
+		Hint_Stage3HUD = CreateWidget<UUserWidget>(this, WHint_Stage3HUD);
+		if (Hint_Stage3HUD)
+		{
+			Hint_Stage3HUD->AddToViewport();
+			Hint_Stage3HUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
 	if (WEndingSectHUD)
 	{
 		EndingSectHUD = CreateWidget<UUserWidget>(this, WEndingSectHUD);

@@ -107,6 +107,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Interact();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Dialogue Num")
 	int32 CurrentState = 0;
 private:
 	FTimerHandle TimerHandle;

@@ -119,11 +119,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bTakeDamage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	bool bTakeDamageAfterDeath;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	bool bSecuringKill;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
+	int HitCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	int AttackCount;
