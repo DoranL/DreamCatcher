@@ -120,6 +120,7 @@ ANelia::ANelia()
 	isBlock = false;
 	
 	checkPointCount = 0;
+	spawnPointCheckNum = 0;
 
 	wallLeftRight = 100.f;
 	wallUpDown = 100.f;
@@ -472,6 +473,8 @@ void ANelia::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("CancelTargeting", IE_Pressed, this, &ANelia::CancelTargeting);
 	//.bConsumeInput = false;
 
+	PlayerInputComponent->BindAction("Escape", IE_Pressed, this, &ANelia::Escape);
+
 	PlayerInputComponent->BindAxis("CameraZoom", this, &ANelia::CameraZoom);
 
 
@@ -798,6 +801,7 @@ void ANelia::Die()
 	SetMovementStatus(EMovementStatus::EMS_Death);
 	OnDeath();
 }
+
 
 //죽으면 애니메이션을 멈추고 스켈레톤 업데이트도 멈춘다.
 void ANelia::DeathEnd()
@@ -1181,7 +1185,7 @@ void ANelia::Respawn()
 	// 캐릭터 컨트롤러 포세스
 	MainPlayerController->Possess(this);
 	SetActorLocation(RespawnLocation);
-
+	
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 
 	APlayerCameraManager* playerCamera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
@@ -1203,6 +1207,11 @@ void ANelia::Respawn()
 		Health += 100.f;
 	}
 }	
+
+void ANelia::Escape()
+{
+	Respawn();
+}
 
 //리스폰이랑 같은 기능의 함수 메모리를 위해서 삭제해야함 _______ 수정
 //void ANelia::Revive()

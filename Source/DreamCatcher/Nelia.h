@@ -211,6 +211,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Die();
 
+	void Escape();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -406,6 +408,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Spawn")
 	FVector RespawnLocation;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category ="Spawn")
+	int32 spawnPointCheckNum;
 
 private:
 	/*UFUNCTION(BlueprintCallable)

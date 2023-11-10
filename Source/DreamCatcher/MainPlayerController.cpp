@@ -264,9 +264,11 @@ void AMainPlayerController::DisplayDialogue()
 		{
 		case 0:
 			UserInterface->InitializeDialogue(DrumEventDialogue);
+			UE_LOG(LogTemp, Warning, TEXT("NUM ZERO"));
 			break;
 		case 1:
 			UserInterface->InitializeDialogue(IntroDialogue);
+			UE_LOG(LogTemp, Warning, TEXT("NUM One"));
 			break;
 		default:
 			break;
