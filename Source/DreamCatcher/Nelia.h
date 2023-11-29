@@ -38,6 +38,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
 	TSubclassOf<class AItemStorage> WeaponStorage;
 
+	class AItemStorage* Storage;
+
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 
 
@@ -184,6 +186,9 @@ public:
 	int32 PotionCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	FString LevelName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int checkPointCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
@@ -294,7 +299,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items)
     class AItem* ActiveOverlappingItem;
 
-	//장착 무기를 설정 매개변수로 무기를 가지고 (EquippedWeapon = WeaponToSet)	
 	FORCEINLINE void SetEquippedWeapon(AWeapon* WeaponToSet) { EquippedWeapon = WeaponToSet; }
 
 	//FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
@@ -377,15 +381,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<AEnemy> EnemyFilter;
 
-	void SwitchLevel(FName LevelName);
+	//void SwitchLevel(FName LevelNameSwitch);
 
 	UFUNCTION(BlueprintCallable)
 	void SaveGame();
 
 	UFUNCTION(BlueprintCallable)
-	void LoadGame(bool SetPosition);
-
-	void LoadGameNoSwitch();
+	void LoadGame();
 
 	FRotator NeliaRotation;
 

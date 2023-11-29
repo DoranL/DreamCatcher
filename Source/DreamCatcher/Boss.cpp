@@ -19,23 +19,26 @@ void ABoss::BeginPlay()
 	bGetup = false;
 	countHit = 0;
 	timerValue = 3.f;
+
+	EnemyAttackCounting = 0;
 } 
 
-void ABoss::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor && Alive())
-	{
-		ANelia* Target = Cast<ANelia>(OtherActor);
-
-		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
-		if (Target)
-		{
-			MoveToTarget(Target);
-			bOverlappingAgroSphere = true;
-			MainPlayerController->DisplayEnemyHealthBar();
-		}
-	}
-}
+//void ABoss::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+//{
+//	if (OtherActor && Alive())
+//	{
+//		ANelia* Target = Cast<ANelia>(OtherActor);
+//
+//		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
+//		if (Target)
+//		{
+//			MoveToTarget(Target);
+//			bOverlappingAgroSphere = true;
+//			MainPlayerController->DisplayEnemyHealthBar();
+//			MoveToTarget(Target);
+//		}
+//	}
+//}
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
@@ -60,7 +63,7 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 		{
 			bTakeDamage = true;
 
-			MainPlayerController->DisplayEnemyHealthBar();
+			//MainPlayerController->DisplayEnemyHealthBar();
 
 			Health -= DamageAmount;
 			
@@ -78,7 +81,6 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 						bGetup = true; // Set bGetup to true to prevent further attacks during recovery
 
 						GetWorldTimerManager().SetTimer(AttackTimer, this, &ABoss::GetUpEnd, timerValue); 
-					
 						/*GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]()
 							{
 								GetUpEnd();
@@ -135,7 +137,7 @@ void ABoss::Attack()
 				{
 				case 0:
 					SetInterpToNelia(false);
-					AnimInstance->Montage_Play(CombatMontage, 0.8f);
+					AnimInstance->Montage_Play(CombatMontage, 1.f);
 					AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
 					break;
 				case 1:

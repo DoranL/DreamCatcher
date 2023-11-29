@@ -10,7 +10,7 @@ USTRUCT(BlueprintType)
 struct FCharacterStats
 {
 	GENERATED_BODY()
-
+	
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	float Health;
 
@@ -25,12 +25,15 @@ struct FCharacterStats
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	int Level;
-
+		
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	float Exp;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	float MaxExp;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
+	int PotionCount;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	FVector Location;
@@ -40,9 +43,6 @@ struct FCharacterStats
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
 	FString WeaponName;
-
-	UPROPERTY(VisibleAnywhere, Category = "SaveGameDate")
-	FString LevelName;
 };
 UCLASS()
 class DREAMCATCHER_API UNeliaSaveGame : public USaveGame
@@ -57,6 +57,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	uint32 UserIndex;
 
-	UPROPERTY(VisibleAnywhere, Category = Basic)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Basic)
 	FCharacterStats CharacterStats;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SaveGameDate")
+	FString LevelName;
 };

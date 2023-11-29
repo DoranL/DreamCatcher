@@ -25,7 +25,7 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
-	virtual void AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	//virtual void AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
 	bool bGetup;
@@ -36,5 +36,5 @@ protected:
 	void GetUpEnd();
 
 public:
-	int EnemyAttackCounting = 0;
+	int EnemyAttackCounting;
 };

@@ -81,7 +81,7 @@ void UUserInterface::Interact()
         if ((MessageIndex + 1) < Dialogue[RowIndex]->Messages.Num()) // 같은 npc의 다음 대사
         {
             MessageIndex += 1;
-            
+
             AnimateMessage(Dialogue[RowIndex]->Messages[MessageIndex].ToString());
         }
         /// <summary>
@@ -90,7 +90,7 @@ void UUserInterface::Interact()
         /// </summary>
         else // npc 대사 끝남 
         { 
-            PlayerDialogTextBlock->SetText(FText::FromString(""));
+           PlayerDialogTextBlock->SetText(FText::FromString(""));
 
             if (Dialogue[RowIndex]->MessageOptions.Num() > 0) // 플레이어 응답 있으면 위젯에서 이름을 나타내는 창에 플레이어 이름을 입력
             {
@@ -126,7 +126,6 @@ void UUserInterface::Interact()
                 //    MainPlayerController->RemoveDialogueUI(); // 대화창 없어짐
                 //    CurrentState = 0; // 상태 초기화
                 //}
-
                 CurrentState = 0;
                 OnAnimationHideMessageUI();
                 MainPlayerController->RemoveDialogue();
@@ -142,6 +141,7 @@ void UUserInterface::Interact()
 
         if ((RowIndex >= 0) && (RowIndex < Dialogue.Num())) // npc 대사 있으면
         {
+            CharacterNameText->SetText(FText::FromString(Dialogue[RowIndex]->CharacterName.ToString()));
             PlayerDialogTextBlock->SetText(FText::FromString(""));
             MessageIndex = 0;
             AnimateMessage(Dialogue[RowIndex]->Messages[MessageIndex].ToString());
@@ -202,6 +202,8 @@ void UUserInterface::InitializeDialogue(class UDataTable* DialogueTable)
 	PlayerDialogTextBlock->SetText(FText::FromString(""));
 
 	OnResetOptions();
+
+    Dialogue.Reset();
 
 	for (auto it : DialogueTable->GetRowMap())
 	{

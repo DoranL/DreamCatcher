@@ -20,6 +20,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
 	FString Name;
 
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	EWeaponState WeaponState;*/
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	bool bWeaponParticles;
 
@@ -44,6 +47,7 @@ public:
 
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
+	UFUNCTION(BlueprintCallable)
 	void Equip(class ANelia* Char); 
 
 	UFUNCTION()

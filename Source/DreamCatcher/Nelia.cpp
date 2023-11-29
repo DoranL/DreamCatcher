@@ -81,7 +81,7 @@ ANelia::ANelia()
 	MaxStamina = 150.f;
 	Stamina = 120.f;
 
-	Level = 3;
+	Level = 1;
 	Exp = 0.f;
 	MaxExp = 100.f;
 
@@ -107,8 +107,6 @@ ANelia::ANelia()
 
 	bMovingForward = false;
 	bMovingRight = false;
-
-	bHasCombatTarget = false;
 
 	bRoll = false;
 	TraceDistance = 40.f;
@@ -149,11 +147,13 @@ void ANelia::BeginPlay()
 	CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &ANelia::CombatSphereOnOverlapBegin);
 	CombatSphere->OnComponentEndOverlap.AddDynamic(this, &ANelia::CombatSphereOnOverlapEnd);
 
-
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
 
-	//LoadGameNoSwitch();
 
+	Storage = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+
+	//LoadGameNoSwitch();
+	//LoadGame();
 	//if (MainPlayerController)
 	//{
 	//	MainPlayerController->GameModeOnly();
@@ -167,7 +167,7 @@ void ANelia::Jump()
 	FVector LaunchVelocity;
 	bool bXYOverride = false;
 	bool bZOverride = false;
-	
+
 	if (MainPlayerController) if (MainPlayerController->bPauseMenuVisible) return;
 
 	if ((MovementStatus != EMovementStatus::EMS_Death))
@@ -190,11 +190,11 @@ void ANelia::Jump()
 			isClimb = false;
 
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-			GetCharacterMovement()->bOrientRotationToMovement = true; 
+			GetCharacterMovement()->bOrientRotationToMovement = true;
 			//2023-06-27 주석처리함
 			//ChangeModeToFly();
 		}
-	} 
+	}
 }
 
 /// <summary>
@@ -409,8 +409,6 @@ void ANelia::Tick(float DeltaTime)
 	{
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
-
-
 		SetActorRotation(InterpRotation);
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -505,6 +503,7 @@ void ANelia::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 	if (OtherActor)
 	{
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+
 		if (Enemy)
 		{
 			for (int i = 0; i < Targets.Num(); i++)
@@ -572,7 +571,7 @@ void ANelia::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	//if (CanMove(Value))// && !isClimb)
+	if (!isClimb)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -664,15 +663,19 @@ void ANelia::PickupPress()
 		if (Weapon)
 		{
 			Weapon->Equip(this);
+			
+			//UE_LOG(LogTemp, Warning, TEXT("yes %s"), *Weapon->Name);
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
-	else if (ActiveOverlappingItem && !bAttacking && EquippedWeapon)
+	if (ActiveOverlappingItem && !bAttacking && EquippedWeapon)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon)
 		{
 			Weapon->Equip(this);
+
+			//UE_LOG(LogTemp, Warning, TEXT("yes %s"), *Weapon->Name);
 			SetActiveOverlappingItem(nullptr);
 		}
 	}
@@ -693,6 +696,18 @@ void ANelia::PickupPress()
 		MainPlayerController->UserInterface->Interact();
 	}
 }
+
+//장착 무기를 설정 매개변수로 무기를 가지고 (EquippedWeapon = WeaponToSet)	
+//void ANelia::SetEquippedWeapon(AWeapon* WeaponToSet)
+//{
+//	UE_LOG(LogTemp, Warning, TEXT("PLEAS"));
+//	if (EquippedWeapon && ActiveOverlappingItem)
+//	{ 
+//		EquippedWeapon->Destroy();
+//	}
+//
+//	EquippedWeapon = WeaponToSet;
+//}
 
 
 //ESC, Q 입력 시 해당 Pause 메뉴 창이 뜸 개발 과정에서는 ESC 입력 시 플레이가 중지되기 때문에 마지막에 Q는 빼줄 예정 
@@ -851,6 +866,9 @@ void ANelia::CameraZoom(const float Value)
 //1번 공격만 하도록 구현
 void ANelia::Attack()
 {
+	//UE_LOG(LogTemp, Warning, TEXT("direction %s"), *Direction.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), EquippedWeapon);
+
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Death && EquippedWeapon && !MainPlayerController->bDialogueVisible && !isClimb)
 	{
 		bAttacking = true;
@@ -914,32 +932,31 @@ void ANelia::Skill()
 			{
 			case 1:
 				//BringBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprint/MagicAttacks/DashAttack.WindAttack_C"));
-				this->EquippedWeapon->Damage = 25;
 				AnimInstance->Montage_Play(SkillMontage, 0.9f);
 				AnimInstance->Montage_JumpToSection(FName("Skill1"), SkillMontage);
 				break;
 			case 2:
-				this->EquippedWeapon->Damage = 10;
 				AnimInstance->Montage_Play(SkillMontage, 1.3f);
 				AnimInstance->Montage_JumpToSection(FName("Skill2"), SkillMontage);
 				break;
 			case 3:
-				this->EquippedWeapon->Damage = 30;
 				AnimInstance->Montage_Play(SkillMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Skill3"), SkillMontage);
 				break;
 			default:
-				this->EquippedWeapon->Damage = 25 * Level;
+				AnimInstance->Montage_Play(SkillMontage, 2.f);
+				AnimInstance->Montage_JumpToSection(FName("Heal"), SkillMontage);
+				PotionCount -= 1;
+				Health += 25;
 				break;
 			}
 		}
 		else if (AnimInstance && SkillMontage && pressSkillNum == 4 && PotionCount > 0)
 		{
-			AnimInstance->Montage_Play(SkillMontage, 1.f);
+			AnimInstance->Montage_Play(SkillMontage, 2.f);
 			AnimInstance->Montage_JumpToSection(FName("Heal"), SkillMontage);
 			PotionCount -= 1;
 			Health += 25;
-			//UE_LOG(LogTemp, Warning, TEXT("Healing"));
 		}
 		else
 		{
@@ -985,7 +1002,6 @@ void ANelia::SprintAttack()
 
 void ANelia::Targeting() //Targeting using Tap key
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Targeting is Complite?"));
 	if (bOverlappingCombatSphere) //There is a enemy in combatsphere
 	{
 		if (targetIndex >= Targets.Num()) //타겟인덱스가 총 타겟 가능 몹 수 이상이면 다시 0으로 초기화
@@ -1013,9 +1029,7 @@ void ANelia::Targeting() //Targeting using Tap key
 //MainPlayerController->DisplayTargetPointer(); 통해 새로 다시 visible로 설정을 해줍니다.
 
 void ANelia::CancelTargeting()
-{
-	//UE_LOG(LogTemp, Warning, TEXT("Targeting unComplite"));
-	
+{	
 	bTabKeyDown = true;
 	if (ActiveOverlappingItem && !EquippedWeapon)
 	{
@@ -1067,7 +1081,7 @@ void ANelia::Rolls(float Value)
 			switch (FMath::RoundToInt(Value))
 			{
 			case 1:
-				RollSectionName = FName("RollForward");
+				RollSectionName = FName("RollFoward");
 				break;
 			case -1:
 				RollSectionName = FName("RollBack");
@@ -1114,9 +1128,9 @@ float ANelia::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (Health - DamageAmount <= 0.f)
+	if (Health - DamageAmount < 1.f)
 	{
-		Health -= DamageAmount;
+		Health = 0;
 		bTakeDamage = false;
 		Die();
 		if (DamageCauser)
@@ -1204,7 +1218,7 @@ void ANelia::Respawn()
 
 		AnimInstance->Montage_Play(CombatMontage, 0.7f);
 		AnimInstance->Montage_JumpToSection(FName("Revive"), CombatMontage);
-		Health += 100.f;
+		Health += 50.f;
 	}
 }	
 
@@ -1283,110 +1297,49 @@ void ANelia::UpdateCombatTarget()
 				}
 			}
 		}
-		if (MainPlayerController)
+		/*if (MainPlayerController)
 		{
 			MainPlayerController->DisplayEnemyHealthBar();
-		}
+		}*/
 		SetCombatTarget(ClosestEnemy);
 		bHasCombatTarget = true;
 	}
 }
 
-//현재 월드를 받아오고 현재 맵 이름을 CurrentLevel에 입력 CurrentLevelName과 매개변수 LevleName이 다르면 LevleName으로 이동
-void ANelia::SwitchLevel(FName LevelName)
-{
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		FString CurrentLevel = World->GetMapName();
-
-		FName CurrentLevelName(*CurrentLevel);
-		if (CurrentLevelName != LevelName)
-		{
-			UGameplayStatics::OpenLevel(World, LevelName);
-		}
-	}
-}
-
-
 void ANelia::SaveGame()
 {
-	//UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
-	//SaveGameInstance->CharacterStats.Health = Health;
-	//SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
-	//SaveGameInstance->CharacterStats.Stamina = Stamina;
-	//SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
-	//SaveGameInstance->CharacterStats.Level = Level;
-	//SaveGameInstance->CharacterStats.Exp = Exp;
-	////SaveGameInstance->CharacterStats.MaxExp = MaxExp;
-
+	UNeliaSaveGame* SaveGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	SaveGameInstance->CharacterStats.Health = Health;
+	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+	SaveGameInstance->CharacterStats.Stamina = Stamina;
+	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.Level = Level;
+	SaveGameInstance->CharacterStats.Exp = Exp;
+	SaveGameInstance->CharacterStats.MaxExp = MaxExp;
+	SaveGameInstance->CharacterStats.PotionCount = PotionCount;
+	LevelName = GetWorld()->GetMapName();
+	LevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+	SaveGameInstance->LevelName = LevelName;
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *LevelName);
+	//UE_LOG(LogTemp, Warning, TEXT("AVE"));
 	//SaveGameInstance->CharacterStats.Location = GetActorLocation();
 	//SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
 
-	////현재 캐릭터가 있는 맵의 이름 StreamingLevelPrefix를 하니까 UEDPIE_0_ElvenRuins 이렇게 안 뜨고 
-	////맵 이름인 ElvenRuins만 뜸
-	//FString MapName = GetWorld()->GetMapName();
-	//MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+	SaveGameInstance->CharacterStats.Location = GetActorLocation();
+	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
 
-	//SaveGameInstance->CharacterStats.LevelName = MapName;
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex);
 
-	//if (EquippedWeapon)
-	//{
-	//	SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
-	//}
-
-	//UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex); 
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *MapName);
 }
 
-void ANelia::LoadGame(bool SetPosition)
+void ANelia::LoadGame()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("LoadGame"));
-	//UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
-
-	//LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
-
-	//Health = LoadGameInstance->CharacterStats.Health;
-	//MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
-	//Stamina = LoadGameInstance->CharacterStats.Stamina;
-	//MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
-	//Level = LoadGameInstance->CharacterStats.Level;
-	//Exp = LoadGameInstance->CharacterStats.Exp;
-	////MaxExp = LoadGameInstance->CharacterStats.MaxExp;
-
-	//if (WeaponStorage)
-	//{
-	//	AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
-	//	if (Weapons)
-	//	{
-	//		FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
-
-	//		AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-	//		WeaponToEquip->Equip(this);
-	//	}
-	//}
-
-	//if (SetPosition)
-	//{
-	//	SetActorLocation(LoadGameInstance->CharacterStats.Location);
-	//	SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
-	//}
-	//SetMovementStatus(EMovementStatus::EMS_Normal);
-	//GetMesh()->bPauseAnims = false;
-	//GetMesh()->bNoSkeletonUpdate = false;
-
-	//if (LoadGameInstance->CharacterStats.LevelName != TEXT(""))
-	//{
-	//	FName LevelName(*LoadGameInstance->CharacterStats.LevelName);
-
-	//	SwitchLevel(LevelName);
-	//}
-}
-
-void ANelia::LoadGameNoSwitch()
-{
-	/*UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
+	UNeliaSaveGame* LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::CreateSaveGameObject(UNeliaSaveGame::StaticClass()));
 
 	LoadGameInstance = Cast<UNeliaSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
 
 	Health = LoadGameInstance->CharacterStats.Health;
 	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
@@ -1395,23 +1348,46 @@ void ANelia::LoadGameNoSwitch()
 	Level = LoadGameInstance->CharacterStats.Level;
 	Exp = LoadGameInstance->CharacterStats.Exp;
 	MaxExp = LoadGameInstance->CharacterStats.MaxExp;
+	PotionCount = LoadGameInstance->CharacterStats.PotionCount;
+	//LevelName = LoadGameInstance->CharacterStats.LevelName;
 
-	if (WeaponStorage)
+	//MaxExp = LoadGameInstance->CharacterStats.MaxExp;
+
+	/*SetActorLocation(LoadGameInstance->CharacterStats.Location);
+	SetActorRotation(LoadGameInstance->CharacterStats.Rotation);*/
+	/*if (SetPosition)
 	{
-		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
-		if (Weapons)
-		{
-			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+		SetActorLocation(LoadGameInstance->CharacterStats.Location);
+		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+	}*/
+	SetActorLocation(LoadGameInstance->CharacterStats.Location);
+	SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 
-			AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-			WeaponToEquip->Equip(this);
-		}
-	}
+	/*if (LoadGameInstance->CharacterStats.LevelName != TEXT(""))
+	{
+		LevelName = (*LoadGameInstance->CharacterStats.LevelName);
 
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-	GetMesh()->bPauseAnims = false;
-	GetMesh()->bNoSkeletonUpdate = false;*/
+		SwitchLevel(LevelName);
+	}*/
+	
 }
+
+//현재 월드를 받아오고 현재 맵 이름을 CurrentLevel에 입력 CurrentLevelName과 매개변수 LevleName이 다르면 LevleName으로 이동
+//void ANelia::SwitchLevel(FName LevelNameSwitch)
+//{
+//	UWorld* World = GetWorld();
+//	if (World)
+//	{
+//		FString CurrentLevel = World->GetMapName();
+//
+//		FName CurrentLevelName(*CurrentLevel);
+//		if (CurrentLevelName != LevelNameSwitch)
+//		{
+//			SaveGame();
+//			UGameplayStatics::OpenLevel(World, CurrentLevelName);
+//		}
+//	}
+//}
 
 // 사용자가 e키를 입력했을 경우 수행되는 함수
 void ANelia::Interact()

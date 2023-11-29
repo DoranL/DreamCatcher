@@ -7,15 +7,20 @@
 #include "Kismet/GameplayStatics.h"
 #include "UserInterface.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Engine/BlueprintGeneratedClass.h"
 
 AMainPlayerController::AMainPlayerController()
 {
 	static ConstructorHelpers::FClassFinder<UUserWidget> UserInterfaceBpClass(TEXT("/Game/HUD/DialogueWidget"));
-
+	
 	if (UserInterfaceBpClass.Class != nullptr)
 	{
 		UserInterfaceClass = UserInterfaceBpClass.Class;
 	}
+
+	/*UBlueprintGeneratedClass* DialogueBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/HUD/DialogueWidget.DialogueWidget_C"));
+
+	DialogueBlueprint = Cast<UClass>(DialogueBP);*/
 }
 
 void AMainPlayerController::BeginPlay()
@@ -122,6 +127,26 @@ void AMainPlayerController::BeginPlay()
 		}
 	}
 
+	if (WkeyHUD)
+	{
+		keyHUD = CreateWidget<UUserWidget>(this, WkeyHUD);
+		if (keyHUD)
+		{
+			keyHUD->AddToViewport();
+			keyHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	if (WLoadingHUD)
+	{
+		LoadingHUD = CreateWidget<UUserWidget>(this, WLoadingHUD);
+		if (LoadingHUD)
+		{
+			LoadingHUD->AddToViewport();
+			LoadingHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
 	if (WPauseMenu)
 	{
 		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
@@ -205,9 +230,9 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 		bPauseMenuVisible = true;
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
 
-		FInputModeGameAndUI InputModeGameAndUI;
+		FInputModeGameAndUI InputMode;
 
-		SetInputMode(InputModeGameAndUI);
+		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 	}
 }
@@ -217,10 +242,16 @@ void AMainPlayerController::RemovePauseMenu_Implementation()
 	if (PauseMenu)
 	{
 		//GameModeOnly();
-
-		bShowMouseCursor = false;
-
 		bPauseMenuVisible = false;
+
+		PauseMenu->SetVisibility(ESlateVisibility::Hidden);
+
+		if (!bPauseMenuVisible)
+		{
+			FInputModeGameOnly InputModeGameOnly;
+			SetInputMode(InputModeGameOnly);
+			bShowMouseCursor = false;
+		}
 	}
 }
 
@@ -264,11 +295,9 @@ void AMainPlayerController::DisplayDialogue()
 		{
 		case 0:
 			UserInterface->InitializeDialogue(DrumEventDialogue);
-			UE_LOG(LogTemp, Warning, TEXT("NUM ZERO"));
 			break;
 		case 1:
 			UserInterface->InitializeDialogue(IntroDialogue);
-			UE_LOG(LogTemp, Warning, TEXT("NUM One"));
 			break;
 		default:
 			break;

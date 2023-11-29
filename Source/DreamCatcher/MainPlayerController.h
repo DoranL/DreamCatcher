@@ -66,6 +66,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WEndingSectHUD;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WkeyHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WLoadingHUD;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* PauseMenu;
 
@@ -84,6 +90,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* EndingSectHUD;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* keyHUD;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* LoadingHUD;
+
 	bool bPauseMenuVisible;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -98,6 +110,8 @@ public:
 	void DisplayDialogue();
 
 	void RemoveDialogue();
+
+	TSubclassOf<class UUserWidget> DialogueBlueprint;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Player UI")
 	class UUserInterface* UserInterface;

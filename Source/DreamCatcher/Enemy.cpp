@@ -1,6 +1,4 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Enemy.h"
 #include "Components/SphereComponent.h"
 #include "AIController.h"
@@ -11,6 +9,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Engine/SkeletalMesh.h"
 #include "Sound/SoundCue.h"
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
@@ -19,25 +18,29 @@
 #include "UObject/ConstructorHelpers.h"
 #include "UserInterface.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/BlueprintGeneratedClass.h"
 
 // Sets default values
 AEnemy::AEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	//static ConstructorHelpers::FObjectFinder<UBlueprint> ExpItem(TEXT("Blueprint'/Game/Blueprints/Dream_BP.Dream_BP'"));
+	//static ConstructorHelpers::FObjectFinder<UBlueprint> ShootBP(TEXT("Blueprint'/Game/Enemy/Enemy1Stage/Boss/Attack_BP/ShootBase.ShootBase'"));
+	UBlueprintGeneratedClass* ExpItem = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprints/Dream_BP.Dream_BP_C"));
+	//UBlueprintGeneratedClass* ShootBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprints/Dream_BP.Dream_BP_C"));
 
-	static ConstructorHelpers::FObjectFinder<UBlueprint> ExpItem(TEXT("Blueprint'/Game/Blueprints/Dream_BP.Dream_BP'"));
-	static ConstructorHelpers::FObjectFinder<UBlueprint> ShootBP(TEXT("Blueprint'/Game/Enemy/Enemy1Stage/Boss/Attack_BP/ShootBase.ShootBase'"));
-
-	if (ExpItem.Object)
+	/*if (ExpItem.Object)
 	{
 		ExpBlueprint = (UClass*)ExpItem.Object->GeneratedClass;
-	}
+	}*/
+	ExpBlueprint = Cast<UClass>(ExpItem);
 
-	if (ShootBP.Object)
+	/*if (ShootBP.Object)
 	{
 		ShootBlueprint = (UClass*)ShootBP.Object->GeneratedClass;
-	}
+	}*/
 	//AgroSphere은 Rampage의 Capsule Component에 부착되어 있는 자식 컴포넌트로 반지름 600.f는 범위를 나타내며 이 범위 안에 Nelia가 있을 경우 추적을 시작한다.
 	AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroShere"));
 	AgroSphere->SetupAttachment(GetRootComponent());
@@ -50,13 +53,16 @@ AEnemy::AEnemy()
 	CombatSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatSphere"));
 	CombatSphere->SetupAttachment(GetRootComponent());
 	CombatSphere->InitSphereRadius(75.f);
-
-	///////////////////////각각 왼팔 오른팔에 부착해둔 CombatCollision EnemySocket을 부착해줌 그 위치에 박스 컴포넌트가 생성된다.
+	
 	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
-	CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket"));
+	//CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket"));
+	CombatCollision->SetupAttachment(GetMesh(), FName("EnemySocket"));
+	
+	//GetMesh()->SkeletalMesh->RebuildSocketMap();
 
 	CombatCollisionLeft = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollisionL"));
-	CombatCollisionLeft->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket1"));
+	//CombatCollisionLeft->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket1"));
+	CombatCollisionLeft->SetupAttachment(GetMesh(), FName("EnemySocket1"));
 
 	bOverlappingCombatSphere = false;
 	bOverlappingAgroSphere = false;
@@ -179,9 +185,10 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
 		if (Target)
 		{
-			MoveToTarget(Target);
+			//Target->SetHasCombatTarget(true);
 			bOverlappingAgroSphere = true;
 			MainPlayerController->DisplayEnemyHealthBar();
+			MoveToTarget(Target);
 		}
 
 	}
@@ -204,6 +211,8 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 				Target->SetCombatTarget(nullptr);
 				bOverlappingAgroSphere = false;
 				//Nelia->UpdateCombatTarget();
+				//UE_LOG(LogTemp, Warning, TEXT("AgroSphereOnOverlapEnd %s"), *this->GetName());
+
 			}
 
 			Target->SetHasCombatTarget(false);
@@ -240,6 +249,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 			Target->UpdateCombatTarget();
 
 			CombatTarget = Target;
+			
 			bOverlappingCombatSphere = true;
 			
 			GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
@@ -258,17 +268,18 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 			MoveToTarget(Target);
 			CombatTarget = nullptr;
 
+			//수정이 health bar 해결 여기인데 물어보기
 			if (Target->CombatTarget == this)
 			{
-				Target->SetCombatTarget(nullptr);
-				Target->bHasCombatTarget = false;
+				//Target->SetCombatTarget(nullptr);
+				//Target->bHasCombatTarget = false;
 				Target->UpdateCombatTarget();
 			}
-			if (Target->MainPlayerController)
-			{
-				USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
-				if (NeliaMesh) Target->MainPlayerController->DisplayEnemyHealthBar();
-			}
+			//if (Target->MainPlayerController)
+			//{
+			//	USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
+			//	if (NeliaMesh) Target->MainPlayerController->DisplayEnemyHealthBar();
+			//}
 
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 		}
@@ -424,12 +435,14 @@ void AEnemy::AttackEnd()
 {
 	bAttacking = false;
 	SetInterpToNelia(false);
+
+	if (EnemyMovementStatus == EEnemyMovementStatus::EMS_Dead) return;
+
 	if (bOverlappingCombatSphere)
 	{
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
 
 		//2023-08-02 타이머 로그 
-		//UE_LOG(LogTemp, Warning, TEXT("Timer, %f"), AttackTime);
 		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
 
@@ -462,9 +475,7 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			if (GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead)
 			{
 				SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
-				MainPlayerController->RemoveEnemyHealthBar();
 			}
-			
 			Die(DamageCauser);
 			bTakeDamage = false;
 			//MainPlayerController->RemoveEnemyHealthBar();
@@ -483,7 +494,8 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		{
 			//HitCount++;
 			bTakeDamage = true;
-			MainPlayerController->DisplayEnemyHealthBar();
+			//MainPlayerController->DisplayEnemyHealthBar();
+			//UE_LOG(LogTemp, Warning, TEXT("%s is take damage value %f"), *this->GetName(), DamageAmount);
 			Health -= DamageAmount;
 
 			if (AnimInstance)
@@ -515,7 +527,6 @@ void AEnemy::Die(AActor* Causer)
 		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
 	}
 	
-	MainPlayerController->RemoveEnemyHealthBar();
 	
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -550,6 +561,7 @@ bool AEnemy::Alive()
 void AEnemy::Disappear()
 {
 	UWorld* world = GetWorld();
+	MainPlayerController->RemoveEnemyHealthBar();
 
 	Destroy();
 

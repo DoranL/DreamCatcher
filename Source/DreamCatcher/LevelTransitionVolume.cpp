@@ -23,7 +23,7 @@ void ALevelTransitionVolume::BeginPlay()
 {
 	Super::BeginPlay();
 
-	TransitionVolume->OnComponentBeginOverlap.AddDynamic(this, &ALevelTransitionVolume::OnOverlapBegin);
+	//TransitionVolume->OnComponentBeginOverlap.AddDynamic(this, &ALevelTransitionVolume::OnOverlapBegin);
 
 }
 
@@ -41,7 +41,7 @@ void ALevelTransitionVolume::OnOverlapBegin(UPrimitiveComponent* OverlappedCompo
 		ANelia* Nelia = Cast<ANelia>(OtherActor);
 		if (Nelia)
 		{
-			Nelia->SwitchLevel(TransitionLevelName);
+			//Nelia->SwitchLevel(TransitionLevelName);
 		}
 	}
 }

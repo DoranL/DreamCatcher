@@ -79,10 +79,10 @@ public:
 		class USoundCue* SwingSound;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-		class UBoxComponent* CombatCollision;
+	class UBoxComponent* CombatCollision;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-		class UBoxComponent* CombatCollisionLeft;
+	class UBoxComponent* CombatCollisionLeft;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* CombatMontage;

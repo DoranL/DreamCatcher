@@ -16,7 +16,7 @@ void AItemStorage::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
+}	
 
 
 

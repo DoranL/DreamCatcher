@@ -19,7 +19,7 @@ AWeapon::AWeapon()
 	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
 	CombatCollision->SetupAttachment(GetRootComponent());
 
-	bWeaponParticles = false;
+	//bWeaponParticles = false;
 
 	Damage = 25.f;
 }
@@ -82,14 +82,34 @@ void AWeapon::Equip(ANelia* Char)
 		//캐릭터 skeletalmesh 오른쪽 손에 생성한 소켓 이름으로 불러옴
 		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName("RightHandSocket");
 		//오른쪽 소켓이 널이 아니기 때문에 캐릭터에 연결
-		if (RightHandSocket)
+		if (RightHandSocket && !Char->EquippedWeapon)
 		{
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 			//	bRotate = false;
 
 			Char->SetEquippedWeapon(this);
 			Char->SetActiveOverlappingItem(nullptr);
+
+			//if (OnEquipSound) UGameplayStatics::PlaySound2D(this, OnEquipSound);
+			if (!bWeaponParticles)
+			{
+				IdleParticlesComponent->Deactivate();
+			}
+		}
+		else if (RightHandSocket && Char->EquippedWeapon)
+		{
+			RightHandSocket->AttachActor(this, Char->GetMesh());
+			//	bRotate = false;
+
+			//무기를 이미 들고 있는 경우 기존에 무기를 제거
+			if (Char->EquippedWeapon != Char->ActiveOverlappingItem)
+			{
+				Char->EquippedWeapon->Destroy();
+			}
+			Char->SetEquippedWeapon(this);
 			
+			Char->SetActiveOverlappingItem(nullptr);
+
 			//if (OnEquipSound) UGameplayStatics::PlaySound2D(this, OnEquipSound);
 			if (!bWeaponParticles)
 			{
@@ -104,7 +124,7 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	if (OtherActor)
 	{
-		
+
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy)
 		{
@@ -117,11 +137,11 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 			}
 			/*if (Enemy->HitParticles)
 			{
-				
+
 				const USkeletalMeshSocket* WeaponSocket = SkeletalMesh->GetSocketByName("WeaponSocket");
 				if (WeaponSocket && )
 				{
-					
+
 					FVector SocketLocation = WeaponSocket->GetSocketLocation(SkeletalMesh);
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
