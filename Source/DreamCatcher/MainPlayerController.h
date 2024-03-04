@@ -18,12 +18,6 @@ class DREAMCATCHER_API AMainPlayerController : public APlayerController
 public:
 	AMainPlayerController();
 
-	//UFUNCTION(BlueprintCallable, Category = "Input")
-	//void LookInput();
-
-	//UFUNCTION(BlueprintCallable, Category = "Input")
-	//void UnLockInput();
-
 public:
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -31,16 +25,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* HUDOverlay;
-
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<class UUserWidget> WStartHud;*/
-
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<class UUserWidget> WD_MainAsset;*/
-
-	///** Variable to hold the widget after creating it */
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* WD_Main;*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WEnemyHealthBar;
@@ -64,13 +48,13 @@ public:
 	TSubclassOf<UUserWidget> WHint_Stage3HUD;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<UUserWidget> WEndingSectHUD;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WkeyHUD;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<UUserWidget> WLoadingHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WEndingSelectHUD;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* PauseMenu;
@@ -88,13 +72,13 @@ public:
 	UUserWidget* Hint_Stage3HUD;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* EndingSectHUD;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* keyHUD;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* LoadingHUD;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* EndingSelectHUD;
 
 	bool bPauseMenuVisible;
 
@@ -157,9 +141,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Dialogue")
 	int checkDialogueNumber;
-
-	//스킬 버튼을 누르고 있는 시간을 체크
-	//int CheckInputKeyTime();
 
 protected:
 	virtual void BeginPlay() override;

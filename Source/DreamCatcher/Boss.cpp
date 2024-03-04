@@ -9,6 +9,8 @@
 
 ABoss::ABoss()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	//Super();
 }
 
@@ -23,28 +25,10 @@ void ABoss::BeginPlay()
 	EnemyAttackCounting = 0;
 } 
 
-//void ABoss::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-//{
-//	if (OtherActor && Alive())
-//	{
-//		ANelia* Target = Cast<ANelia>(OtherActor);
-//
-//		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
-//		if (Target)
-//		{
-//			MoveToTarget(Target);
-//			bOverlappingAgroSphere = true;
-//			MainPlayerController->DisplayEnemyHealthBar();
-//			MoveToTarget(Target);
-//		}
-//	}
-//}
 
 float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	//2023-07-23 수정사항
-	//MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
 
 	if (GetWorld())
 	{
@@ -57,13 +41,10 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 			Health -= DamageAmount;
 			Die(DamageCauser);
 			bTakeDamage = false;
-			//MainPlayerController->RemoveEnemyHealthBar();
 		}
 		else
 		{
 			bTakeDamage = true;
-
-			//MainPlayerController->DisplayEnemyHealthBar();
 
 			Health -= DamageAmount;
 			
@@ -78,17 +59,9 @@ float ABoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEve
 						AnimInstance->Montage_Play(CombatMontage, 0.8f);
 						AnimInstance->Montage_JumpToSection(FName("Recover"), CombatMontage);
 						countHit = 0;
-						bGetup = true; // Set bGetup to true to prevent further attacks during recovery
+						bGetup = true; 
 
 						GetWorldTimerManager().SetTimer(AttackTimer, this, &ABoss::GetUpEnd, timerValue); 
-						/*GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]()
-							{
-								GetUpEnd();
-								GetWorld()->GetTimerManager().ClearTimer(AttackTimer);
-								UE_LOG(LogTemp, Warning, TEXT("In Timer"));
-							}), timerValue, false);*/
-
-						//UE_LOG(LogTemp, Warning, TEXT("TimerCountDown %f"), timerValue);
 					}
 					else
 					{

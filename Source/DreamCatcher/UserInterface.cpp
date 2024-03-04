@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "UserInterface.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,12 +37,12 @@ void UUserInterface::OnTimerCompleted()
 // CurrentState는 1 첫 번째 대화창 출력 InitialMessage = text 기존 적혀있던 Text를 새로 입력하는 Text로 덮어씀
 // OutputMessage는 출력할 메세지 변수
 // iLetter은 글자를 한 글자씩 출력할 때 쓰는 int32형태의 변수 길이를 측정하고 초기 길이보다 짧으면 계속해서 입력받는 형식
-// 맨 마지막 줄이 한 글자 입력 시간을 조절하는 DelayBetweenLetters 값을주고 OnAnimationTimerCompleted가 값이 입력되는 애니메이션 실행동안인듯함 
+// 맨 마지막 줄이 한 글자 입력 시간을 조절하는 DelayBetweenLetters 값을주고 OnAnimationTimerCompleted가 값이 입력되는 애니메이션 실행
 void UUserInterface::AnimateMessage(const FString& Text)
 {
 	CurrentState = 1;
 
-    InitialMessage = Text.Replace(TEXT("\n"), TEXT("\n"));
+    InitialMessage = Text;
 
 	OutputMessage = "";
 
@@ -56,25 +55,16 @@ void UUserInterface::AnimateMessage(const FString& Text)
 
 void UUserInterface::Interact()
 {
-    //맵에서 0번째 캐릭터를 가져와서 nelia에 넣어주고 가져온 캐릭터의 컨트롤러를 형변환 후 MainPlayerController에 넣어줌
     Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(this, 0));
     MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
     
     //PlayerDialogueTextBlock 	UPROPERTY(meta = (BindWidget)) 생성할 때 bindwidget 해서 dialoguewidget에 생성한 playerdialoguetextblock이랑 연결해주고
-    //이부분이 살짝 애매한데 SetText 이부분을 그럼 위젯이랑 연결해줬으니까 위젯 그래프에 있는 settext를 통해서 현재 대사를 넣어줌
     if (CurrentState == 1) // npc의 row 내에 있는 메시지의 해당하는 대사의 한 글자만 출력되고 있는 상태 즉 안녕하세요 출력 시 안 또는 안녕 또는 안녕하... (안녕하세요 경우는 Currentstate ==2)
     {
         GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
         PlayerDialogTextBlock->SetText(FText::FromString(InitialMessage)); // 현재 대사를 출력 중 마우스 왼쪽 클릭 시 모든 내용을 즉시 출력한다.
         CurrentState = 2;
     }
-    /// <summary>
-    /// 처음 대사 이후 currentstate 2가 되고 
-    /// ((MessageIndex + 1) < Dialogue[RowIndex]->Messages.Num()) 이부분이 뭔가 데이터 테이블에 있는 각 로우값에 해당하는 Messages 최대 개수 보다 적으면
-    /// 이게 의미하는 게 아마 row 당 내 데이터 테이블을 봐도 row1 은 메세지 2개 row2,3를 1개 씩인데 로우에 포함된 메세지를 전부 출력한 것이 아닌 경우 
-    /// MessageIndex +!을 해주고 AnimateMessage(Dialogue[Rowindex]->Message[MessageIndex].ToString() 첫 번째 대화 이후 text를 AnimateMessage함수에 text에 넣어 출력해줌 
-    /// 그러고 나서 interact 첫번째 부분부터 다시 수행하는 듯 그러고 나서 row1에 두번째 메세지를 출력하고 나서 messageindex가 message 최대 인덱스 보다 커지니까 else문 수행
-    /// </summary>
     else if (CurrentState == 2) // npc의 한 row 내에 있는 메시지의 해당하는 대사가 모두 화면에 출력된 경우
     {
         // Get next message 데이터 테이블에서 Messages가 더 남아 있는 경우를 의미
@@ -112,20 +102,6 @@ void UUserInterface::Interact()
             // 불변수를 false로 setCinematicMode는 대화창 수행 도중에 막아놨던 화면 전환 및 입력키를 다시 풀어주는 역할
             else 
             {
-                //
-                //RowIndex += 1; // 다음 대사 행
-
-                //if ((RowIndex >= 0) && (RowIndex < Dialogue.Num())) // 다음 npc 대사
-                //{
-                //    MessageIndex = 0;
-                //    DialogueEvents();
-                //}
-                //else // 플레이어 응답 없고 다음 npc 대사도 없으면 대화 종료
-                //{
-                //    bCanStartDialogue = false; // (수동으로) 대화 시작 못함
-                //    MainPlayerController->RemoveDialogueUI(); // 대화창 없어짐
-                //    CurrentState = 0; // 상태 초기화
-                //}
                 CurrentState = 0;
                 OnAnimationHideMessageUI();
                 MainPlayerController->RemoveDialogue();
@@ -134,8 +110,7 @@ void UUserInterface::Interact()
     }
     else if (CurrentState == 3) // 플레이어 응답지를 설정한 상태 즉 대화창에서 npc에 대한 답변을 선택할 수 있는 경우 들어가는 파트
     {
-        //데이터 테이블 상에서 보면 MessageOption에 Answer index가 있는데 이 변수는 플레이어가 대사 선택 가능한 상태에서 한 대사를 클릭 시 해당 숫자를 RowIndex로 넣어줌으로써 예를 들어 2일 경우 
-        //배열이기 때문에 3번째 문장인 row3로 이동한다.
+        //데이터 테이블 상에서 보면 MessageOption에 Answer index가 있는데 이 변수는 플레이어가 대사 선택 가능한 상태에서 한 대사를 클릭 시 해당 숫자를 RowIndex로 넣음
         RowIndex = Dialogue[RowIndex]->MessageOptions[SelectedOption].AnswerIndex;
         OnResetOptions(); // 응답 리셋
 
@@ -248,28 +223,3 @@ void UUserInterface::InitializeDialogue(class UDataTable* DialogueTable)
 		}
 	}
 }
-
-/// <summary>
-/// 방향키 w,s를 통해 대화를 위아래로 선택 가능 
-/// </summary>
-//void UUserInterface::OnSelectUpOption()
-//{
-//    if (CurrentState != 3)return;
-//
-//    if ((SelectedOption - 1) >= 0)
-//    {
-//        SelectedOption -= 1;
-//        OnHighLightOption(SelectedOption);
-//    }
-//}
-//
-//void UUserInterface::OnSelectDownOption()
-//{
-//    if (CurrentState != 3)return;
-//
-//    if ((SelectedOption + 1) < Dialogue[RowIndex]->MessageOptions.Num())
-//    {
-//        SelectedOption += 1;
-//        OnHighLightOption(SelectedOption);
-//    }
-//}

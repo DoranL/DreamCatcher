@@ -24,17 +24,10 @@ class DREAMCATCHER_API AEnemy : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AEnemy();
 
 	//캐릭터가 죽고 나서 계속 공격 당하는 걸 막는 bool 변수
 	bool bHasValidTarget;
-
-	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<class UUserWidget> HUDAsset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* EnemyHUD;*/
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 	class AMainPlayerController* MainPlayerController;
@@ -83,6 +76,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* CombatCollisionLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UBoxComponent* HealthBarPoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* CombatMontage;
@@ -188,6 +184,12 @@ public:
 	void AttackEnd();
 
 	UFUNCTION(BlueprintCallable)
+	void Hit();
+
+	UFUNCTION(BlueprintCallable)
+	void HitEnd();
+
+	UFUNCTION(BlueprintCallable)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	
@@ -203,7 +205,4 @@ public:
 	void Disappear();
 
 	float deltaTimeSave;
-//2023-06-27 추가사항
-//protected:
-//	int DistanceToCombat;
 };

@@ -9,7 +9,7 @@ void UMainAnimInstance::NativeInitializeAnimation()
 {
 	if (Pawn == nullptr)
 	{
-		Pawn = TryGetPawnOwner();  //이 애니메이션 인스턴스의 소유자를 가져온다?
+		Pawn = TryGetPawnOwner();  //이 애니메이션 인스턴스의 소유자를 가져옴
 		if (Pawn)
 		{
 			Nelia = Cast<ANelia>(Pawn);

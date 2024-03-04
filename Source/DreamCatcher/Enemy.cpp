@@ -23,46 +23,30 @@
 // Sets default values
 AEnemy::AEnemy()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	//static ConstructorHelpers::FObjectFinder<UBlueprint> ExpItem(TEXT("Blueprint'/Game/Blueprints/Dream_BP.Dream_BP'"));
-	//static ConstructorHelpers::FObjectFinder<UBlueprint> ShootBP(TEXT("Blueprint'/Game/Enemy/Enemy1Stage/Boss/Attack_BP/ShootBase.ShootBase'"));
 	UBlueprintGeneratedClass* ExpItem = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprints/Dream_BP.Dream_BP_C"));
-	//UBlueprintGeneratedClass* ShootBP = LoadObject<UBlueprintGeneratedClass>(GetWorld(), TEXT("/Game/Blueprints/Dream_BP.Dream_BP_C"));
 
-	/*if (ExpItem.Object)
-	{
-		ExpBlueprint = (UClass*)ExpItem.Object->GeneratedClass;
-	}*/
 	ExpBlueprint = Cast<UClass>(ExpItem);
 
-	/*if (ShootBP.Object)
-	{
-		ShootBlueprint = (UClass*)ShootBP.Object->GeneratedClass;
-	}*/
-	//AgroSphere은 Rampage의 Capsule Component에 부착되어 있는 자식 컴포넌트로 반지름 600.f는 범위를 나타내며 이 범위 안에 Nelia가 있을 경우 추적을 시작한다.
 	AgroSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AgroShere"));
 	AgroSphere->SetupAttachment(GetRootComponent());
 	AgroSphere->InitSphereRadius(600.f);
 	
-	/////////////////////////////////////////////////////////
 	AgroSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Ignore);
 
-	//CombatSphere도 AgroSphere처럼 Capsule Component에 부착되어 있고 반지름은 75.f 이 범위 내 Nelia가 있으면 전투상태가 된다.
 	CombatSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatSphere"));
 	CombatSphere->SetupAttachment(GetRootComponent());
 	CombatSphere->InitSphereRadius(75.f);
 	
 	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
-	//CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket"));
 	CombatCollision->SetupAttachment(GetMesh(), FName("EnemySocket"));
 	
-	//GetMesh()->SkeletalMesh->RebuildSocketMap();
-
 	CombatCollisionLeft = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollisionL"));
-	//CombatCollisionLeft->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket1"));
 	CombatCollisionLeft->SetupAttachment(GetMesh(), FName("EnemySocket1"));
+
+	HealthBarPoint = CreateDefaultSubobject<UBoxComponent>(TEXT("HealthBarPoint"));
+	HealthBarPoint->SetupAttachment(GetMesh(), FName("HealthBar"));
 
 	bOverlappingCombatSphere = false;
 	bOverlappingAgroSphere = false;
@@ -85,15 +69,12 @@ AEnemy::AEnemy()
 	bInterpToNelia = false;
 }
 
-// Called when the game starts or when spawned
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	Nelia = Cast<ANelia>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	MainPlayerController = Cast<AMainPlayerController>(Nelia->GetController());
-
-	//EnemyHUD = CreateWidget<UUserWidget>(this, HUDAsset);
 
 	AgroSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::AgroSphereOnOverlapBegin);
 	AgroSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::AgroSphereOnOverlapEnd);
@@ -107,9 +88,6 @@ void AEnemy::BeginPlay()
 	CombatCollisionLeft->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
 	CombatCollisionLeft->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
-	/// <summary>
-	/// ////////////////////////////////////////////////////////////////////
-	/// </summary>
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -120,13 +98,11 @@ void AEnemy::BeginPlay()
 	CombatCollisionLeft->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollisionLeft->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	//몬스터가 플레이어를 때릴 때 카메라에 가려지는 것 막는 코드(Mesh(적 테두리), capsule(내가 설정한 캡슐)이 카메라 시야에 있게되면
-	//아래 코드가 없을 시 캐릭터를 보여주기 위해 앞으로 당겨지게 되는데 렉 걸린 것 처럼 보여지게 됨 따라서 무시하도록 코드 작성
+	//몬스터가 플레이어를 때릴 때 카메라에 가려지는 것 막는 코드
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
-// Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -137,24 +113,11 @@ void AEnemy::Tick(float DeltaTime)
 	
 	if (bInterpToNelia && CombatTarget)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Interptonelia and Combattarget"));
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
-
 		SetActorRotation(InterpRotation);
-		//UE_LOG(LogTemp, Warning, TEXT("TICK IN SETACTORLOCATION"));
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/*if (CombatTarget)
-	{
-		CombatTargetLocation = CombatTarget->GetActorLocation();
-		if (AIController)
-		{
-			NeliaLocation = CombatTargetLocation;
-		}
-	}*/
 }
 
 FRotator AEnemy::GetLookAtRotationYaw(FVector Target)
@@ -169,7 +132,6 @@ void AEnemy::SetInterpToNelia(bool Interp)
 	bInterpToNelia = Interp;
 }
 
-// Called to bind functionality to input
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -182,20 +144,17 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 	{
 		ANelia* Target = Cast<ANelia>(OtherActor);
 
-		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
 		if (Target)
 		{
-			//Target->SetHasCombatTarget(true);
 			bOverlappingAgroSphere = true;
-			MainPlayerController->DisplayEnemyHealthBar();
+			CombatCollisionLeft->SetupAttachment(GetMesh(), FName("HealthBar"));
+
 			MoveToTarget(Target);
 		}
 
 	}
 }
 
-//검출 대상이 자기 자신이 아닌지 확인하고 유효 타겟 변수를 없음으로 두고 Nelia의 CombatTarget이 Enemy일 경우 대상을 nullptr로 초기화 시켜준다.
-//만약 Enemy 상태가 idle일 경우 AIController를 멈춘다.
 void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor)
@@ -210,9 +169,6 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 			{
 				Target->SetCombatTarget(nullptr);
 				bOverlappingAgroSphere = false;
-				//Nelia->UpdateCombatTarget();
-				//UE_LOG(LogTemp, Warning, TEXT("AgroSphereOnOverlapEnd %s"), *this->GetName());
-
 			}
 
 			Target->SetHasCombatTarget(false);
@@ -230,7 +186,6 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 	}
 }
 
-//위 if문 내용과 동일 만약 Nelia이면 유효 타겟을 true로 두고
 void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor && Alive())
@@ -238,7 +193,6 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		ANelia* Target = Cast<ANelia>(OtherActor);
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
 
-		//2023-6-24 if 조건문에 !bAttacking 추가함 - 캐릭터가 공격 중에 target쪽으로 이동하는 문제 해결을 목적으로 함 
 		if (Target && !bAttacking)
 		{
 			bHasValidTarget = true;
@@ -268,18 +222,11 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 			MoveToTarget(Target);
 			CombatTarget = nullptr;
 
-			//수정이 health bar 해결 여기인데 물어보기
 			if (Target->CombatTarget == this)
 			{
-				//Target->SetCombatTarget(nullptr);
-				//Target->bHasCombatTarget = false;
 				Target->UpdateCombatTarget();
 			}
-			//if (Target->MainPlayerController)
-			//{
-			//	USkeletalMeshComponent* NeliaMesh = Cast<USkeletalMeshComponent>(OtherComp);
-			//	if (NeliaMesh) Target->MainPlayerController->DisplayEnemyHealthBar();
-			//}
+
 
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 		}
@@ -349,7 +296,6 @@ void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 
 
 //콜리전을 활성화시켜 주는 함수 CombatCollsion, CombatCollisionL은 실제로 내가 설정해준 Enemy의 왼손과 오른손 콜리전 
-//만약 콜리전이 활성화된 상태에서 휘두르는 소리가 있을 경우 소리를 재생한다.
 void AEnemy::ActivateCollision()
 {
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -368,9 +314,7 @@ void AEnemy::DeactivateCollision()
 	CombatCollisionLeft->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-//Enemy가 죽지 않았고 유효 타겟이 있을 경우 만약 AIController가 있을 경우 이동을 멈추고 상태를 공격 상태로 지정한다. (이동을 하면서 공격하는 것을 방지하기 위함
-//만약 공격 중인 상태가 아니라면 공격 상태를 확인하는 bool 변수를 true로 두고 Enemy의 AnimInstance를 가져오고 Switch 문을 통해 공격 모션을 Attack, Attack1, JumpAttack 순서대로 실행하도록 설정
-//2023-06-27 수정사항 distanctocombat 및 switch 입력 값도 DistanceToCombatInt로 수정
+//Enemy가 죽지 않았고 유효 타겟이 있을 경우 만약 AIController가 있을 경우 이동을 멈추고 상태를 공격 상태로 지정한다. (이동을 하면서 공격하는 것을 방지하기 위함)
 void AEnemy::Attack()
 {
 	/*DistanceToCombat = FVector::Distance(this->GetActorLocation(), Nelia->GetActorLocation());
@@ -394,8 +338,6 @@ void AEnemy::Attack()
 			if (AnimInstance && CombatMontage)
 			{
 				int32 Section = EnemyAttackCount;
-				//2023-6-24 랜덤으로 하려면 아래 SECTIOIN을 변경해야함
-				// int AttackNum = FMath::RandRange(1, 5);
 
 				switch (Section)
 				{
@@ -442,15 +384,24 @@ void AEnemy::AttackEnd()
 	{
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
 
-		//2023-08-02 타이머 로그 
 		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
 
-	//!bAttacking 조건 추가 2023-08-02 수정
 	else if (bOverlappingAgroSphere && !bAttacking)
 	{
 		MoveToTarget(Nelia);
 	}
+}
+
+void AEnemy::Hit()
+{
+	CustomTimeDilation = 0.6f;
+	GetWorldTimerManager().SetTimer(DeathTimer, this, &AEnemy::HitEnd, DeathDelay);
+}
+
+void AEnemy::HitEnd()
+{
+	CustomTimeDilation = 1.f;
 }
 
 
@@ -458,15 +409,12 @@ void AEnemy::AttackEnd()
 float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	//2023-07-23 수정사항
-	//MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
 
 	if (GetWorld())
 	{
 		MainPlayerController = Cast<AMainPlayerController>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0)->GetController());
 	}
 
-	//2023-08-08 수정 targeting 표시가 없을 때라도 데미지가 들어가게 하고 싶음 
 	if ((Nelia->bTargeting || Nelia->bHasCombatTarget) && Nelia->CombatTarget)
 	{
 		if (Health - DamageAmount <= 0.f && HitCount <1)
@@ -478,7 +426,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 			}
 			Die(DamageCauser);
 			bTakeDamage = false;
-			//MainPlayerController->RemoveEnemyHealthBar();
 		}
 		else if (Health - DamageAmount <= 0.f && HitCount > 2)
 		{
@@ -492,16 +439,14 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 		}
 		else if(Health - DamageAmount > 0.f)
 		{
-			//HitCount++;
 			bTakeDamage = true;
-			//MainPlayerController->DisplayEnemyHealthBar();
-			//UE_LOG(LogTemp, Warning, TEXT("%s is take damage value %f"), *this->GetName(), DamageAmount);
 			Health -= DamageAmount;
 
 			if (AnimInstance)
 			{
 				AnimInstance->Montage_Play(CombatMontage, 1.f);
 				AnimInstance->Montage_JumpToSection(FName("Hit"), CombatMontage);
+				Hit();
 			}
 		}
 	}
@@ -510,7 +455,6 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 }
 
 //Damage Causer는 Enemy에게 공격을 가하는 플레이어를 의미
-//TakeDamage에서 체력 이상의 데미지를 받아 죽게되면 공격을 가한 대상을 Die 함수에 전달하여 그 대상이 맞는 경우 타겟으로 지정한다.
 void AEnemy::Die(AActor* Causer)
 {
 	FTimerHandle WaitHandle;
@@ -525,6 +469,7 @@ void AEnemy::Die(AActor* Causer)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.f);
 		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
+		MainPlayerController->RemoveEnemyHealthBar();
 	}
 	
 	
@@ -544,7 +489,7 @@ void AEnemy::Die(AActor* Causer)
 	}
 }
 
-//죽은 후에는 애니메이션을 멈추고 스켈레톤도 없애준다. //////////// 근데 여기서 타이머는 왜 쓰는거지?
+//죽은 후에는 애니메이션을 멈추고 스켈레톤 움직임 멈춤
 void AEnemy::DeathEnd()
 {
 	GetMesh()->bPauseAnims = true;

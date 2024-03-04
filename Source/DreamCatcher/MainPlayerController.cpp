@@ -117,16 +117,6 @@ void AMainPlayerController::BeginPlay()
 		}
 	}
 
-	if (WEndingSectHUD)
-	{
-		EndingSectHUD = CreateWidget<UUserWidget>(this, WEndingSectHUD);
-		if (EndingSectHUD)
-		{
-			EndingSectHUD->AddToViewport();
-			EndingSectHUD->SetVisibility(ESlateVisibility::Hidden);
-		}
-	}
-
 	if (WkeyHUD)
 	{
 		keyHUD = CreateWidget<UUserWidget>(this, WkeyHUD);
@@ -144,6 +134,16 @@ void AMainPlayerController::BeginPlay()
 		{
 			LoadingHUD->AddToViewport();
 			LoadingHUD->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	if (WEndingSelectHUD)
+	{
+		EndingSelectHUD = CreateWidget<UUserWidget>(this, WEndingSelectHUD);
+		if (EndingSelectHUD)
+		{
+			EndingSelectHUD->AddToViewport();
+			EndingSelectHUD->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 

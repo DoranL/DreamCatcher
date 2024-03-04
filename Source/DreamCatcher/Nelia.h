@@ -42,11 +42,6 @@ public:
 
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 
-
-	//2023-6-24 
-	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class AEnemy* Enemy;*/
-
 	//속성 창에서 편집이 가능하고 블루프린터에서 읽기쓰기가 모두 가능한 UParticleSystem 클래스형 변수인 HitParticles 생성 - Nelia가 적을 공격하고 적 콜라이더와 부딪혔을 때 나오는 파티클
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UParticleSystem* HitParticles;
@@ -104,7 +99,6 @@ public:
 
 	FRotator GetLookAtRotationYaw(FVector Target);
 
-	/** Set Movement status and running speed */
 	void SetMovementStatus(EMovementStatus Status);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
@@ -121,17 +115,15 @@ public:
 
 	bool bShiftKeyDown;
 
-	/** Pressed down to enable sprinting */
 	void ShiftKeyDown();
 
-	/** Released to stop sprinting */
 	void ShiftKeyUp();
 
 	/**Camera boom positioning the camera behind the player*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAcess = "true"))
 	class USpringArmComponent* CameraBoom;
 
-	/** Follow Camera */
+	// Follow Camera 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAcess = "true"))
 	class UCameraComponent* FollowCamera;
 
@@ -149,7 +141,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
 	float ZoomSteps = 30.f;
 
-	/** Base turn rates to scale turning functions for the camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	float BaseTurnRate;
 
@@ -189,6 +180,9 @@ public:
 	FString LevelName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	FString WeapName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int checkPointCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
@@ -210,16 +204,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddExp();
 
-	/*UFUNCTION(BlueprintCallable)
-	void PlayerMaterailEffect(const FLinearColor& Color);*/
-
 	UFUNCTION(BlueprintCallable)
 	void Die();
 
 	void Escape();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void Jump() override;
@@ -232,17 +222,13 @@ protected:
 	float TraceDistanceEnemy;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	/** called for forwards/backwards input*/
 	
 	UFUNCTION(BlueprintCallable)
 	void MoveForward(float Value);
 	 
-	/** called for side to side input*/
 	void MoveRight(float Value);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -253,10 +239,8 @@ public:
 	void CanClimb();
 	void ChangeModeToFly();
 
-	/** called for Yaw rotation*/
 	void Turn(float Value);
 
-	/** called for Pitch rotation*/
 	void LookUp(float Value);
 
 	bool bMovingForward;
@@ -264,28 +248,12 @@ public:
 
 	bool CanMove(float Value);
 
-	/** Called via input to turn at a given rate
-	* @parm Rate This is a normalized rate, i.e 1.0 means 100% of desired turn rate
-	*/
-	//void TurnAtRate(float Rate);
-
-	/** Called via input to look up/down at a given rate
-	* @parm Rate This is a normalized rate, i.e 1.0 means 100% of desired look up/down rate
-	*/
-	
-	//void LookUpAtRate(float Rate);
-
 	bool bPickup;
 	void PickupPress();
 
 	bool bESCDown;
 	void ESCDown();
 	void ESCUp();
-
-	/*UFUNCTION(BlueprintCallable)
-	void Block();
-	void BlockEnd();
-	*/
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Parry")
 	bool isBlock;
@@ -301,7 +269,6 @@ public:
 
 	FORCEINLINE void SetEquippedWeapon(AWeapon* WeaponToSet) { EquippedWeapon = WeaponToSet; }
 
-	//FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
 	FORCEINLINE void SetActiveOverlappingItem(AItem* Item) { ActiveOverlappingItem = Item; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Anims")
@@ -333,9 +300,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
 
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* BlockMontage;*/
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* HitMontage;
 
@@ -348,9 +312,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* ClimbTop_Two;
 
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-	class UAnimMontage* RespawnMontage;*/
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	bool bcanUseSkill;
 
@@ -362,7 +323,6 @@ public:
 
 	void Rolls(float Value);
 	
-	//블루프린트에서 호출할 수 있도록
 	UFUNCTION(BlueprintCallable)
 	void StopRoll();
 
@@ -415,9 +375,6 @@ public:
 	int32 spawnPointCheckNum;
 
 private:
-	/*UFUNCTION(BlueprintCallable)
-	void Revive();*/
-
 	UFUNCTION(BlueprintCallable)
 	void ReviveEnd();
 
